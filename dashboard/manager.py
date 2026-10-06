@@ -21,6 +21,7 @@ class CrawlerManager:
         self.current_pipeline: Optional[CrawlerPipeline] = None
         self._background_task: Optional[asyncio.Task] = None
         self._lock = asyncio.Lock()
+        self._use_staging_pref = True
 
     def get_status(self) -> Dict[str, Any]:
         """Lấy toàn bộ trạng thái hệ thống: pipeline metrics + checkpoint summary."""
@@ -44,7 +45,7 @@ class CrawlerManager:
                 "concurrency": 50,
                 "limit": None,
                 "eta_seconds": None,
-                "use_staging": True,
+                "use_staging": self._use_staging_pref,
                 "staging_batch_size": 10,
                 "total_moved_to_nas": 0,
                 "staging_pending": 0
@@ -78,12 +79,15 @@ class CrawlerManager:
             target_groups = groups if groups else [1]
             target_domains_set = set(d.lower().strip() for d in domains) if domains else None
 
+            target_staging = self._use_staging_pref if use_staging is None else use_staging
+            self._use_staging_pref = target_staging
+
             self.current_pipeline = CrawlerPipeline(
                 concurrency=concurrency,
                 target_groups=target_groups,
                 target_domains=target_domains_set,
                 limit=limit,
-                use_staging=use_staging,
+                use_staging=target_staging,
                 staging_batch_size=staging_batch_size
             )
 
@@ -127,6 +131,22 @@ class CrawlerManager:
         if self._background_task and not self._background_task.done():
             self._background_task.cancel()
         return {"success": True, "message": "Đã gửi tín hiệu dừng (STOPPED)."}
+
+    def toggle_staging(self, enabled: bool) -> Dict[str, Any]:
+        """Bật hoặc tắt chế độ Staging Spooler trong thời gian thực hoặc lưu tùy chọn."""
+        self._use_staging_pref = enabled
+        if self.current_pipeline and self.current_pipeline.state in ("RUNNING", "PAUSED"):
+            self.current_pipeline.set_staging(enabled)
+            return {
+                "success": True,
+                "use_staging": enabled,
+                "message": f"Đã chuyển Staging Spooler sang {'BẬT (đệm /tmp)' if enabled else 'TẮT (ghi thẳng NAS)'}."
+            }
+        return {
+            "success": True,
+            "use_staging": enabled,
+            "message": f"Đã lưu cài đặt Staging Spooler là {'BẬT' if enabled else 'TẮT'}."
+        }
 
     def get_domains_data(self) -> Dict[str, Any]:
         """Kết hợp metadata của 97 domain với tiến độ thực tế đã crawl."""

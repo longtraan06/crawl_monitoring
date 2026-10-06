@@ -114,23 +114,23 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
           
           <!-- Nhóm Domain Selector -->
           <div class="space-y-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Lựa chọn Nhóm Domain cào</label>
             <div class="space-y-1.5">
-              <label class="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer p-1.5 rounded hover:bg-slate-800/80">
+              <label class="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer p-1 rounded hover:bg-slate-800/80">
                 <input type="checkbox" id="chkGroup1" checked class="w-4 h-4 rounded text-indigo-600 bg-slate-800 border-slate-600 focus:ring-0">
-                <span><strong class="text-emerald-400">Nhóm 1 (86 Domain Stable)</strong> - 3.64M URLs</span>
+                <span><strong class="text-emerald-400">Nhóm 1 (86 Stable)</strong> - 3.64M</span>
               </label>
-              <label class="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer p-1.5 rounded hover:bg-slate-800/80">
+              <label class="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer p-1 rounded hover:bg-slate-800/80">
                 <input type="checkbox" id="chkGroup2" class="w-4 h-4 rounded text-indigo-600 bg-slate-800 border-slate-600 focus:ring-0">
-                <span><strong class="text-amber-400">Nhóm 2 (Long Châu, Wujue)</strong> - 133k URLs (Rate-limit)</span>
+                <span><strong class="text-amber-400">Nhóm 2 (Long Châu)</strong> - 133k</span>
               </label>
-              <label class="flex items-center gap-2.5 text-xs text-slate-400 cursor-pointer p-1.5 rounded hover:bg-slate-800/80">
+              <label class="flex items-center gap-2.5 text-xs text-slate-400 cursor-pointer p-1 rounded hover:bg-slate-800/80">
                 <input type="checkbox" id="chkGroup3" disabled class="w-4 h-4 rounded bg-slate-800 border-slate-700 opacity-50">
-                <span><strong class="text-rose-400">Nhóm 3 (9 Domain Chết/Khóa WAF)</strong> - Đã loại trừ</span>
+                <span><strong class="text-rose-400">Nhóm 3 (9 Lỗi WAF)</strong> - Bỏ</span>
               </label>
             </div>
           </div>
@@ -138,19 +138,38 @@
           <!-- Concurrency Setting -->
           <div class="space-y-2">
             <div class="flex justify-between items-center text-xs">
-              <label class="font-semibold uppercase tracking-wider text-slate-400">Độ song song (Concurrency)</label>
+              <label class="font-semibold uppercase tracking-wider text-slate-400">Độ song song</label>
               <span id="concurrencyVal" class="text-indigo-400 font-bold font-mono">100 workers</span>
             </div>
             <input type="range" id="inputConcurrency" min="10" max="300" step="10" value="100" oninput="document.getElementById('concurrencyVal').innerText = this.value + ' workers'" class="w-full accent-indigo-500 cursor-pointer bg-slate-700 h-2 rounded-lg">
-            <p class="text-[11px] text-slate-500">Server mạnh (nhiều CPU/RAM): có thể kéo lên 150 - 250 workers để đạt tốc độ tối đa.</p>
+            <p class="text-[11px] text-slate-500">Kéo lên 150 - 250 workers nếu server nhiều CPU/RAM.</p>
           </div>
 
           <!-- Limit setting -->
           <div class="space-y-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Giới hạn số URL (Tùy chọn)</label>
-            <input type="number" id="inputLimit" placeholder="Để trống để cào hết hoặc nhập ví dụ: 500" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
-            <p class="text-[11px] text-slate-500">Nhập số lượng nếu muốn chạy mẻ thử nghiệm (ví dụ: 100, 500, 5000).</p>
+            <input type="number" id="inputLimit" placeholder="Để trống cào hết" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+            <p class="text-[11px] text-slate-500">Để trống để cào toàn bộ hoặc nhập ví dụ: 500, 1000.</p>
           </div>
+
+          <!-- Staging Spooler Switch Setting -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <label class="font-semibold uppercase tracking-wider text-slate-400">Staging Spooler</label>
+              <span id="stagingToggleStatus" class="text-emerald-400 font-bold font-mono text-[11px]">ĐANG BẬT</span>
+            </div>
+            <div class="bg-slate-800/90 border border-slate-700/80 rounded-lg p-2.5 flex items-center justify-between">
+              <span class="text-xs text-slate-200 font-medium flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-amber-400 text-xs"></i> Đệm /tmp &rarr; NAS
+              </span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="chkUseStaging" checked onchange="handleStagingSwitchChange(this.checked)" class="sr-only peer">
+                <div class="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+            <p class="text-[11px] text-slate-500">Mỗi 10 URL tự gom mv sang NAS & dọn /tmp chống đầy ổ.</p>
+          </div>
+
         </div>
 
         <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -549,12 +568,30 @@
       const failedCount = corp.status_breakdown ? (corp.total_visited - (corp.status_breakdown.SUCCESS || 0)) : pipe.total_failed;
       document.getElementById('badgeFailedCount').innerText = Math.max(0, failedCount || 0);
 
-      // Update Staging Status
+      // Update Staging Status & Switch
+      const isStagingOn = pipe.use_staging !== undefined ? pipe.use_staging : true;
       const movedNas = (pipe.total_moved_to_nas || 0).toLocaleString();
       const pendingBuf = pipe.staging_pending || 0;
-      const bMoved = document.getElementById('stagingMovedCount');
-      if (bMoved) {
-        bMoved.innerText = `${movedNas} đã mv sang NAS (${pendingBuf} đệm)`;
+      
+      const stagingBadge = document.getElementById('stagingBadge');
+      if (stagingBadge) {
+        if (isStagingOn) {
+          stagingBadge.className = "bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 px-2.5 py-1 rounded-full flex items-center gap-1.5 font-mono text-[11px]";
+          stagingBadge.innerHTML = `<i class="fa-solid fa-bolt text-amber-400"></i> Staging Spooler: 10 URLs/batch &rarr; NAS (<span id="stagingMovedCount">${movedNas} đã mv sang NAS (${pendingBuf} đệm)</span>)`;
+        } else {
+          stagingBadge.className = "bg-slate-800 border border-slate-700 text-slate-400 px-2.5 py-1 rounded-full flex items-center gap-1.5 font-mono text-[11px]";
+          stagingBadge.innerHTML = `<i class="fa-solid fa-circle-pause text-slate-400"></i> Staging: TẮT (Ghi thẳng NAS)`;
+        }
+      }
+
+      const stagingChk = document.getElementById('chkUseStaging');
+      const stagingToggleStatus = document.getElementById('stagingToggleStatus');
+      if (stagingChk && stagingChk !== document.activeElement) {
+        stagingChk.checked = isStagingOn;
+      }
+      if (stagingToggleStatus) {
+        stagingToggleStatus.innerText = isStagingOn ? 'ĐANG BẬT' : 'ĐÃ TẮT';
+        stagingToggleStatus.className = isStagingOn ? 'text-emerald-400 font-bold font-mono text-[11px]' : 'text-slate-400 font-bold font-mono text-[11px]';
       }
 
       // Progress
@@ -608,6 +645,26 @@
       }, 1500);
     }
 
+    // Staging Spooler Switch Handler
+    async function handleStagingSwitchChange(enabled) {
+      const statusBadge = document.getElementById('stagingToggleStatus');
+      if (statusBadge) {
+        statusBadge.innerText = enabled ? 'ĐANG BẬT' : 'ĐÃ TẮT';
+        statusBadge.className = enabled ? 'text-emerald-400 font-bold font-mono text-[11px]' : 'text-slate-400 font-bold font-mono text-[11px]';
+      }
+      try {
+        const res = await fetch('/api/crawler/staging-toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled })
+        });
+        const data = await res.json();
+        console.log('[Staging Switch]', data.message);
+      } catch (err) {
+        console.error('Lỗi khi đổi chế độ Staging:', err);
+      }
+    }
+
     // Pipeline Controls
     async function startCrawlFromUI() {
       const groups = [];
@@ -616,6 +673,7 @@
       const concurrency = parseInt(document.getElementById('inputConcurrency').value);
       const limitVal = document.getElementById('inputLimit').value;
       const limit = limitVal ? parseInt(limitVal) : null;
+      const use_staging = document.getElementById('chkUseStaging') ? document.getElementById('chkUseStaging').checked : true;
 
       if (groups.length === 0) {
         alert('Vui lòng chọn ít nhất 1 nhóm domain để cào!');
@@ -625,7 +683,7 @@
       const res = await fetch('/api/crawler/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groups, concurrency, limit })
+        body: JSON.stringify({ groups, concurrency, limit, use_staging })
       });
       const data = await res.json();
       alert(data.message);

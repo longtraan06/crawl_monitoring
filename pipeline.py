@@ -390,6 +390,14 @@ class CrawlerPipeline:
             self.checkpoint.record_batch(batch_results)
             batch_results.clear()
 
+    def set_staging(self, enabled: bool):
+        """Bật hoặc tắt chế độ Staging Spooler thời gian thực."""
+        self.use_staging = enabled
+        self.doc_store.use_staging = enabled
+        if not enabled:
+            self.doc_store.flush_remaining_staging()
+        logger.info(f"Staging Spooler switched to: {'ENABLED' if enabled else 'DISABLED'}")
+
     async def run(self):
         """Khởi động toàn bộ pipeline điều phối đa nhiệm với tối ưu hóa đa nhân và Staging Mover."""
         self._start_time = time.time()
@@ -406,7 +414,7 @@ class CrawlerPipeline:
 
         storage_coro = asyncio.create_task(self._storage_task())
         disk_writer_coro = asyncio.create_task(self._disk_writer_task())
-        staging_mover_coro = asyncio.create_task(self._staging_mover_task()) if self.use_staging else None
+        staging_mover_coro = asyncio.create_task(self._staging_mover_task())
         worker_coros = [asyncio.create_task(self._worker_task(i)) for i in range(self.concurrency)]
         producer_coro = asyncio.create_task(self._producer_task())
 
@@ -418,9 +426,8 @@ class CrawlerPipeline:
             await self.doc_write_queue.put(None)
             await disk_writer_coro
 
-            if staging_mover_coro:
-                await self.staging_mover_queue.put(None)
-                await staging_mover_coro
+            await self.staging_mover_queue.put(None)
+            await staging_mover_coro
 
             await self.result_queue.put(None)
             await storage_coro
@@ -432,16 +439,14 @@ class CrawlerPipeline:
                 w.cancel()
             await self.doc_write_queue.put(None)
             await disk_writer_coro
-            if staging_mover_coro:
-                await self.staging_mover_queue.put(None)
-                await staging_mover_coro
+            await self.staging_mover_queue.put(None)
+            await staging_mover_coro
             await self.result_queue.put(None)
             await storage_coro
 
         finally:
             await self.fetcher.close()
             self.cpu_pool.shutdown(wait=False)
-            if self.use_staging:
-                self.doc_store.flush_remaining_staging()
+            self.doc_store.flush_remaining_staging()
             self.state = "STOPPED"
             logger.info("Pipeline đã kết thúc phiên làm việc.")

@@ -46,6 +46,9 @@ class StartCrawlRequest(BaseModel):
 class RetryRequest(BaseModel):
     ids: List[int]
 
+class ToggleStagingRequest(BaseModel):
+    enabled: bool
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
     """Phục vụ file giao diện chính của Dashboard."""
@@ -86,6 +89,12 @@ async def resume_crawl():
 async def stop_crawl():
     """Dừng hoàn toàn tiến trình cào."""
     res = crawler_manager.stop()
+    return JSONResponse(res)
+
+@app.post("/api/crawler/staging-toggle")
+async def toggle_staging(req: ToggleStagingRequest):
+    """Bật/tắt chế độ Staging Spooler thời gian thực."""
+    res = crawler_manager.toggle_staging(req.enabled)
     return JSONResponse(res)
 
 @app.get("/api/crawler/status")
