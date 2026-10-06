@@ -43,7 +43,11 @@ class CrawlerManager:
                 "target_groups": [1],
                 "concurrency": 50,
                 "limit": None,
-                "eta_seconds": None
+                "eta_seconds": None,
+                "use_staging": True,
+                "staging_batch_size": 10,
+                "total_moved_to_nas": 0,
+                "staging_pending": 0
             }
 
         return {
@@ -62,7 +66,9 @@ class CrawlerManager:
         groups: Optional[List[int]] = None,
         domains: Optional[List[str]] = None,
         limit: Optional[int] = None,
-        concurrency: int = 50
+        concurrency: int = 50,
+        use_staging: Optional[bool] = None,
+        staging_batch_size: Optional[int] = None
     ) -> Dict[str, Any]:
         """Khởi động một phiên crawl mới trong background task."""
         async with self._lock:
@@ -76,7 +82,9 @@ class CrawlerManager:
                 concurrency=concurrency,
                 target_groups=target_groups,
                 target_domains=target_domains_set,
-                limit=limit
+                limit=limit,
+                use_staging=use_staging,
+                staging_batch_size=staging_batch_size
             )
 
             # Chạy pipeline trong asyncio task ngầm

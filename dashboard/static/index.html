@@ -106,8 +106,11 @@
             </h2>
             <p class="text-xs text-slate-400">Chọn nhóm domain, thiết lập số lượng và giới hạn song song trước khi chạy.</p>
           </div>
-          <div class="text-xs text-slate-400">
-            Storage folder: <code class="bg-slate-900 px-2 py-1 rounded text-indigo-300 font-mono">crawler_output/documents/{id}/</code>
+          <div class="text-xs text-slate-400 flex flex-wrap items-center gap-3">
+            <span>Storage: <code class="bg-slate-900 px-2 py-1 rounded text-indigo-300 font-mono">crawler_output/documents/{id}/</code></span>
+            <span id="stagingBadge" class="bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 px-2.5 py-1 rounded-full flex items-center gap-1.5 font-mono text-[11px]">
+              <i class="fa-solid fa-bolt text-amber-400"></i> Staging Spooler: 10 URLs/batch &rarr; NAS (<span id="stagingMovedCount">0 đã mv</span>)
+            </span>
           </div>
         </div>
 
@@ -545,6 +548,14 @@
       // Update failed badge
       const failedCount = corp.status_breakdown ? (corp.total_visited - (corp.status_breakdown.SUCCESS || 0)) : pipe.total_failed;
       document.getElementById('badgeFailedCount').innerText = Math.max(0, failedCount || 0);
+
+      // Update Staging Status
+      const movedNas = (pipe.total_moved_to_nas || 0).toLocaleString();
+      const pendingBuf = pipe.staging_pending || 0;
+      const bMoved = document.getElementById('stagingMovedCount');
+      if (bMoved) {
+        bMoved.innerText = `${movedNas} đã mv sang NAS (${pendingBuf} đệm)`;
+      }
 
       // Progress
       const visited = corp.total_visited || pipe.total_processed || 0;

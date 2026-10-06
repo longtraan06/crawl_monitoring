@@ -1,4 +1,5 @@
 import os
+import tempfile
 from pathlib import Path
 
 # Base Paths
@@ -18,6 +19,17 @@ OUTPUT_DIR = Path(os.getenv("CRAWLER_OUTPUT_DIR", str(PROJECT_ROOT / "crawler_ou
 DOCUMENTS_DIR = OUTPUT_DIR / "documents"
 SHARDS_DIR = OUTPUT_DIR / "shards"
 CHECKPOINT_DB_PATH = OUTPUT_DIR / "checkpoint.db"
+
+# Staging Spooler Buffer (Tối ưu cho NAS / Network Mount)
+# Crawl ghi vào ổ cục bộ /tmp với tốc độ cực cao, sau mỗi 10 URL luồng mover sẽ di chuyển sang thư mục NAS và xóa tmp
+USE_STAGING_BUFFER = os.getenv("USE_STAGING", "true").lower() in ("1", "true", "yes")
+_DEFAULT_STAGING_DIR = (
+    "/tmp/vibio_staging"
+    if os.name != "nt"
+    else str(Path(tempfile.gettempdir()) / "vibio_staging")
+)
+STAGING_DIR = Path(os.getenv("STAGING_DIR", _DEFAULT_STAGING_DIR))
+STAGING_BATCH_SIZE = int(os.getenv("STAGING_BATCH", "10"))
 
 # Web Dashboard
 DASHBOARD_HOST = os.getenv("DASHBOARD_HOST", "0.0.0.0")

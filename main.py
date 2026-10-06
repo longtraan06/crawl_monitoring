@@ -71,6 +71,17 @@ def main():
         action="store_true",
         help="Bao gồm cả Nhóm 2 (Long Châu, Wujue) bên cạnh 86 domain Nhóm 1"
     )
+    parser.add_argument(
+        "--staging-batch",
+        type=int,
+        default=None,
+        help="Số lượng URL mỗi đợt chuyển từ tmp sang thư mục project (mặc định: 10)"
+    )
+    parser.add_argument(
+        "--no-staging",
+        action="store_true",
+        help="Tắt bộ đệm staging /tmp, ghi trực tiếp vào thư mục project"
+    )
 
     args = parser.parse_args()
 
@@ -90,7 +101,9 @@ def main():
     pipeline = CrawlerPipeline(
         concurrency=args.concurrency,
         include_group_2=args.include_group_2,
-        limit=limit
+        limit=limit,
+        use_staging=False if args.no_staging else None,
+        staging_batch_size=args.staging_batch
     )
 
     try:

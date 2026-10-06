@@ -40,6 +40,8 @@ class StartCrawlRequest(BaseModel):
     domains: Optional[List[str]] = None
     limit: Optional[int] = None
     concurrency: int = 50
+    use_staging: Optional[bool] = None
+    staging_batch_size: Optional[int] = None
 
 class RetryRequest(BaseModel):
     ids: List[int]
@@ -62,7 +64,9 @@ async def start_crawl(req: StartCrawlRequest):
         groups=req.groups,
         domains=req.domains,
         limit=req.limit,
-        concurrency=req.concurrency
+        concurrency=req.concurrency,
+        use_staging=req.use_staging,
+        staging_batch_size=req.staging_batch_size
     )
     return JSONResponse(res)
 

@@ -23,7 +23,9 @@ from .config import (
     NUM_CPU_WORKERS,
     MAX_QUEUE_SIZE,
     MIN_CONTENT_CHARS,
-    BUFFER_FLUSH_INTERVAL
+    BUFFER_FLUSH_INTERVAL,
+    USE_STAGING_BUFFER,
+    STAGING_BATCH_SIZE
 )
 from .domains import is_domain_allowed, get_domain_group
 from .models import CrawlTask, CrawlResult
@@ -45,19 +47,29 @@ class CrawlerPipeline:
         concurrency: int = DEFAULT_CONCURRENCY,
         target_groups: Optional[List[int]] = None,
         target_domains: Optional[Set[str]] = None,
-        limit: Optional[int] = None
+        limit: Optional[int] = None,
+        use_staging: Optional[bool] = None,
+        staging_batch_size: Optional[int] = None,
+        include_group_2: bool = False
     ):
         self.concurrency = concurrency
-        self.target_groups = target_groups or [1]
+        if include_group_2 and not target_groups:
+            self.target_groups = [1, 2]
+        else:
+            self.target_groups = target_groups or [1]
         self.target_domains = target_domains
         self.limit = limit
+        
+        self.use_staging = USE_STAGING_BUFFER if use_staging is None else use_staging
+        self.staging_batch_size = STAGING_BATCH_SIZE if staging_batch_size is None else staging_batch_size
         
         self.task_queue: asyncio.Queue = asyncio.Queue(maxsize=MAX_QUEUE_SIZE)
         self.result_queue: asyncio.Queue = asyncio.Queue(maxsize=MAX_QUEUE_SIZE * 2)
         self.doc_write_queue: asyncio.Queue = asyncio.Queue(maxsize=MAX_QUEUE_SIZE * 2)
+        self.staging_mover_queue: asyncio.Queue = asyncio.Queue(maxsize=MAX_QUEUE_SIZE * 2)
         
         self.checkpoint = CheckpointTracker()
-        self.doc_store = DocumentStore()
+        self.doc_store = DocumentStore(use_staging=self.use_staging)
         self.fetcher = AsyncFetcher()
         self.extractor = HybridCleaner()
         
@@ -75,6 +87,7 @@ class CrawlerPipeline:
         self._total_processed = 0
         self._total_success = 0
         self._total_failed = 0
+        self._total_moved_to_nas = 0
         self._start_time = 0.0
 
     def pause(self):
@@ -125,7 +138,11 @@ class CrawlerPipeline:
             "target_groups": self.target_groups,
             "concurrency": self.concurrency,
             "limit": self.limit,
-            "eta_seconds": round(eta_seconds, 1) if eta_seconds is not None else None
+            "eta_seconds": round(eta_seconds, 1) if eta_seconds is not None else None,
+            "use_staging": self.use_staging,
+            "staging_batch_size": self.staging_batch_size,
+            "total_moved_to_nas": self._total_moved_to_nas,
+            "staging_pending": self.staging_mover_queue.qsize() if self.use_staging else 0
         }
 
     async def _producer_task(self):
@@ -243,7 +260,7 @@ class CrawlerPipeline:
                 self.task_queue.task_done()
 
     async def _disk_writer_task(self):
-        """Tiến trình ghi đĩa ngầm độc lập: Nhận tài liệu từ hàng đợi và lưu vào thư mục documents/{doc_id}."""
+        """Tiến trình ghi đĩa ngầm độc lập: Nhận tài liệu từ hàng đợi và lưu vào staging /tmp."""
         loop = asyncio.get_running_loop()
         while True:
             try:
@@ -252,8 +269,13 @@ class CrawlerPipeline:
                     self.doc_write_queue.task_done()
                     break
 
-                # Ghi đĩa trên worker thread để hoàn toàn không chặn async loop
+                # Ghi đĩa vào staging_dir (/tmp) với tốc độ cao, không nghẽn bởi NAS
                 await loop.run_in_executor(None, self.doc_store.save_document, result)
+                
+                # Nếu bật Staging: gửi id sang mover queue để gom batch 10 URL chuyển sang NAS
+                if self.use_staging:
+                    await self.staging_mover_queue.put(result.id)
+
                 self.doc_write_queue.task_done()
 
             except asyncio.CancelledError:
@@ -261,6 +283,77 @@ class CrawlerPipeline:
             except Exception as e:
                 logger.error(f"Lỗi ghi đĩa: {e}")
                 self.doc_write_queue.task_done()
+
+    async def _staging_mover_task(self):
+        """
+        Luồng ngầm di chuyển tài liệu độc lập:
+        Cứ sau 10 URLs được crawl vào /tmp, khởi tạo luồng chuyển (mv) về thư mục project trên NAS,
+        đồng thời xóa sạch dữ liệu đệm ở /tmp để chống tràn ổ home/root.
+        """
+        loop = asyncio.get_running_loop()
+        batch_ids: List[int] = []
+        last_move_time = time.time()
+
+        while True:
+            try:
+                # Đọc ID từ queue với timeout 2.0s
+                try:
+                    doc_id = await asyncio.wait_for(
+                        self.staging_mover_queue.get(),
+                        timeout=2.0
+                    )
+                except asyncio.TimeoutError:
+                    doc_id = "TIMEOUT"
+
+                if doc_id is None:
+                    self.staging_mover_queue.task_done()
+                    break
+
+                if doc_id != "TIMEOUT":
+                    batch_ids.append(doc_id)
+                    self.staging_mover_queue.task_done()
+
+                # Điều kiện kích hoạt luồng di chuyển:
+                # 1. Đạt mốc 10 URL (staging_batch_size)
+                # 2. Hoặc sau 3 giây nếu có ít nhất 1 URL đang chờ
+                now = time.time()
+                should_move = (len(batch_ids) >= self.staging_batch_size) or (
+                    len(batch_ids) > 0 and (now - last_move_time >= 3.0)
+                )
+
+                if should_move and batch_ids:
+                    to_move = batch_ids.copy()
+                    batch_ids.clear()
+                    last_move_time = now
+
+                    moved = await loop.run_in_executor(
+                        None,
+                        self.doc_store.move_batch_to_destination,
+                        to_move
+                    )
+                    self._total_moved_to_nas += moved
+                    logger.info(
+                        f"[Staging Mover] Đã mv batch {moved} documents từ /tmp sang NAS & dọn dẹp sạch /tmp. "
+                        f"(Tổng đã chuyển NAS: {self._total_moved_to_nas})"
+                    )
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Lỗi trong staging mover task: {e}")
+
+        # Chuyển nốt số URL còn lại trong mẻ cuối khi dừng pipeline
+        if batch_ids:
+            moved = await loop.run_in_executor(
+                None,
+                self.doc_store.move_batch_to_destination,
+                batch_ids
+            )
+            self._total_moved_to_nas += moved
+            batch_ids.clear()
+
+        # Quét dọn lần cuối toàn bộ staging dir
+        await loop.run_in_executor(None, self.doc_store.flush_remaining_staging)
 
     async def _storage_task(self):
         """Ghi nhận định kỳ vào Checkpoint DB theo transaction batch."""
@@ -298,18 +391,22 @@ class CrawlerPipeline:
             batch_results.clear()
 
     async def run(self):
-        """Khởi động toàn bộ pipeline điều phối đa nhiệm với tối ưu hóa đa nhân."""
+        """Khởi động toàn bộ pipeline điều phối đa nhiệm với tối ưu hóa đa nhân và Staging Mover."""
         self._start_time = time.time()
         self.state = "RUNNING"
         self._stop_requested = False
         self._pause_event.set()
 
-        logger.info(f"Pipeline RUNNING: Concurrency={self.concurrency}, CPU Workers={NUM_CPU_WORKERS}")
+        logger.info(
+            f"Pipeline RUNNING: Concurrency={self.concurrency}, CPU Workers={NUM_CPU_WORKERS}, "
+            f"Staging Buffer={'BẬT (Mỗi ' + str(self.staging_batch_size) + ' URLs mv sang NAS)' if self.use_staging else 'TẮT'}"
+        )
 
         await self.fetcher.start()
 
         storage_coro = asyncio.create_task(self._storage_task())
         disk_writer_coro = asyncio.create_task(self._disk_writer_task())
+        staging_mover_coro = asyncio.create_task(self._staging_mover_task()) if self.use_staging else None
         worker_coros = [asyncio.create_task(self._worker_task(i)) for i in range(self.concurrency)]
         producer_coro = asyncio.create_task(self._producer_task())
 
@@ -317,10 +414,15 @@ class CrawlerPipeline:
             await producer_coro
             await asyncio.gather(*worker_coros)
             
-            # Gửi sentinel kết thúc cho storage và disk writer
+            # Gửi sentinel kết thúc tuần tự: writer -> mover -> storage
             await self.doc_write_queue.put(None)
-            await self.result_queue.put(None)
             await disk_writer_coro
+
+            if staging_mover_coro:
+                await self.staging_mover_queue.put(None)
+                await staging_mover_coro
+
+            await self.result_queue.put(None)
             await storage_coro
 
         except (asyncio.CancelledError, KeyboardInterrupt):
@@ -329,12 +431,17 @@ class CrawlerPipeline:
             for w in worker_coros:
                 w.cancel()
             await self.doc_write_queue.put(None)
-            await self.result_queue.put(None)
             await disk_writer_coro
+            if staging_mover_coro:
+                await self.staging_mover_queue.put(None)
+                await staging_mover_coro
+            await self.result_queue.put(None)
             await storage_coro
 
         finally:
             await self.fetcher.close()
             self.cpu_pool.shutdown(wait=False)
+            if self.use_staging:
+                self.doc_store.flush_remaining_staging()
             self.state = "STOPPED"
             logger.info("Pipeline đã kết thúc phiên làm việc.")
