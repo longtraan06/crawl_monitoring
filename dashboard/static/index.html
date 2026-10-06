@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ViBioMIR - Crawler Orchestrator & Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .markdown-body h1 { font-size: 1.6rem; font-weight: 700; color: #1e293b; margin-top: 1rem; margin-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.4rem; }
+    .markdown-body h2 { font-size: 1.3rem; font-weight: 600; color: #334155; margin-top: 1.25rem; margin-bottom: 0.5rem; border-left: 4px solid #4f46e5; padding-left: 0.5rem; }
+    .markdown-body h3 { font-size: 1.1rem; font-weight: 600; color: #475569; margin-top: 1rem; margin-bottom: 0.5rem; }
+    .markdown-body p { margin-bottom: 0.85rem; line-height: 1.65; color: #334155; }
+    .markdown-body ul, .markdown-body ol { margin-left: 1.5rem; margin-bottom: 0.85rem; list-style-type: disc; }
+    .markdown-body blockquote { border-left: 4px solid #cbd5e1; padding-left: 1rem; color: #64748b; font-style: italic; margin-bottom: 1rem; }
+    .dark .markdown-body h1 { color: #f1f5f9; border-color: #334155; }
+    .dark .markdown-body h2 { color: #e2e8f0; border-color: #6366f1; }
+    .dark .markdown-body h3 { color: #cbd5e1; }
+    .dark .markdown-body p { color: #cbd5e1; }
+    .dark .markdown-body blockquote { border-color: #475569; color: #94a3b8; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="bg-slate-800/90 border-b border-slate-700/80 sticky top-0 z-50 backdrop-blur-md px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 shadow-lg">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-indigo-500/20 shadow-md">
+        <i class="fa-solid fa-dna text-white text-lg"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          ViBioMIR <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">Orchestrator Studio</span>
+        </h1>
+        <p class="text-xs text-slate-400">Điều phối & Giám sát Hệ thống Crawl Y tế Quy mô Lớn (4.39M URLs)</p>
+      </div>
+    </div>
+
+    <!-- Live Status Pill & Quick Controls -->
+    <div class="flex items-center gap-3">
+      <div id="statusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-700 text-slate-300 border border-slate-600">
+        <span class="w-2.5 h-2.5 rounded-full bg-slate-400 animate-pulse"></span>
+        <span id="statusText">IDLE (Sẵn sàng)</span>
+      </div>
+
+      <div class="flex items-center gap-1.5 bg-slate-950/60 p-1 rounded-xl border border-slate-700/70">
+        <button id="btnQuickStart" onclick="startCrawlModal()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-play"></i> Crawl
+        </button>
+        <button id="btnQuickPause" onclick="pauseCrawl()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-pause"></i> Pause
+        </button>
+        <button id="btnQuickResume" onclick="resumeCrawl()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-play-pause"></i> Resume
+        </button>
+        <button id="btnQuickStop" onclick="stopCrawl()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-stop"></i> Stop
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="bg-slate-800/40 border-b border-slate-800 px-6 py-2 flex items-center space-x-2 text-sm overflow-x-auto">
+    <button onclick="switchTab('tab-overview')" id="nav-tab-overview" class="tab-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2 bg-indigo-600 text-white transition">
+      <i class="fa-solid fa-chart-pie"></i> Tổng Quan & Điều Phối
+    </button>
+    <button onclick="switchTab('tab-domains')" id="nav-tab-domains" class="tab-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">
+      <i class="fa-solid fa-globe"></i> 97 Nhóm Domain
+    </button>
+    <button onclick="switchTab('tab-failed')" id="nav-tab-failed" class="tab-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">
+      <i class="fa-solid fa-triangle-exclamation"></i> URL Thất Bại & Retry
+      <span id="badgeFailedCount" class="text-xs px-1.5 py-0.2 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">0</span>
+    </button>
+    <button onclick="switchTab('tab-inspector')" id="nav-tab-inspector" class="tab-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">
+      <i class="fa-solid fa-columns"></i> Thẩm Định Side-by-Side
+    </button>
+  </nav>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="flex-1 p-6 max-w-7xl w-full mx-auto">
+
+    <!-- ==================== TAB 1: TỔNG QUAN & ĐIỀU PHỐI ==================== -->
+    <div id="tab-overview" class="space-y-6">
+      
+      <!-- Top Control Card -->
+      <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-indigo-400"></i> Bảng Điều Khiển Phiên Crawl
+            </h2>
+            <p class="text-xs text-slate-400">Chọn nhóm domain, thiết lập số lượng và giới hạn song song trước khi chạy.</p>
+          </div>
+          <div class="text-xs text-slate-400">
+            Storage folder: <code class="bg-slate-900 px-2 py-1 rounded text-indigo-300 font-mono">crawler_output/documents/{id}/</code>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+          
+          <!-- Nhóm Domain Selector -->
+          <div class="space-y-2">
+            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Lựa chọn Nhóm Domain cào</label>
+            <div class="space-y-1.5">
+              <label class="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer p-1.5 rounded hover:bg-slate-800/80">
+                <input type="checkbox" id="chkGroup1" checked class="w-4 h-4 rounded text-indigo-600 bg-slate-800 border-slate-600 focus:ring-0">
+                <span><strong class="text-emerald-400">Nhóm 1 (86 Domain Stable)</strong> - 3.64M URLs</span>
+              </label>
+              <label class="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer p-1.5 rounded hover:bg-slate-800/80">
+                <input type="checkbox" id="chkGroup2" class="w-4 h-4 rounded text-indigo-600 bg-slate-800 border-slate-600 focus:ring-0">
+                <span><strong class="text-amber-400">Nhóm 2 (Long Châu, Wujue)</strong> - 133k URLs (Rate-limit)</span>
+              </label>
+              <label class="flex items-center gap-2.5 text-xs text-slate-400 cursor-pointer p-1.5 rounded hover:bg-slate-800/80">
+                <input type="checkbox" id="chkGroup3" disabled class="w-4 h-4 rounded bg-slate-800 border-slate-700 opacity-50">
+                <span><strong class="text-rose-400">Nhóm 3 (9 Domain Chết/Khóa WAF)</strong> - Đã loại trừ</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Concurrency Setting -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <label class="font-semibold uppercase tracking-wider text-slate-400">Độ song song (Concurrency)</label>
+              <span id="concurrencyVal" class="text-indigo-400 font-bold font-mono">50 workers</span>
+            </div>
+            <input type="range" id="inputConcurrency" min="10" max="100" step="5" value="50" oninput="document.getElementById('concurrencyVal').innerText = this.value + ' workers'" class="w-full accent-indigo-500 cursor-pointer bg-slate-700 h-2 rounded-lg">
+            <p class="text-[11px] text-slate-500">Khuyến nghị: 40-60 workers cho tốc độ cao nhất mà không bị thắt cổ chai mạng.</p>
+          </div>
+
+          <!-- Limit setting -->
+          <div class="space-y-2">
+            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Giới hạn số URL (Tùy chọn)</label>
+            <input type="number" id="inputLimit" placeholder="Để trống để cào hết hoặc nhập ví dụ: 500" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+            <p class="text-[11px] text-slate-500">Nhập số lượng nếu muốn chạy mẻ thử nghiệm (ví dụ: 100, 500, 5000).</p>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <button onclick="startCrawlFromUI()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-emerald-600/20 shadow-md transition">
+              <i class="fa-solid fa-play"></i> Bắt đầu Crawl
+            </button>
+            <button onclick="pauseCrawl()" class="px-4 py-2.5 rounded-xl text-xs font-semibold bg-amber-600/80 hover:bg-amber-600 text-white flex items-center gap-2 transition">
+              <i class="fa-solid fa-pause"></i> Tạm dừng (Pause)
+            </button>
+            <button onclick="resumeCrawl()" class="px-4 py-2.5 rounded-xl text-xs font-semibold bg-indigo-600/80 hover:bg-indigo-600 text-white flex items-center gap-2 transition">
+              <i class="fa-solid fa-play-pause"></i> Tiếp tục (Resume)
+            </button>
+            <button onclick="stopCrawl()" class="px-4 py-2.5 rounded-xl text-xs font-semibold bg-rose-600/80 hover:bg-rose-600 text-white flex items-center gap-2 transition">
+              <i class="fa-solid fa-stop"></i> Dừng hẳn (Stop)
+            </button>
+          </div>
+          <div class="text-xs text-slate-400 flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-indigo-400"></i> Checkpoint SQLite tự động chống cào trùng lặp (Zero duplicate).
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI METRIC CARDS -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        
+        <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-4">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+            <span>Tốc độ hiện tại</span>
+            <i class="fa-solid fa-bolt text-amber-400"></i>
+          </div>
+          <div class="text-xl font-bold text-white font-mono" id="kpiSpeed">0.0 doc/s</div>
+          <div class="text-[11px] text-emerald-400 mt-1 font-mono" id="kpiSpeedMin">0 URLs/phút</div>
+        </div>
+
+        <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-4">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+            <span>Đã cào phiên này</span>
+            <i class="fa-solid fa-cloud-arrow-down text-indigo-400"></i>
+          </div>
+          <div class="text-xl font-bold text-white font-mono" id="kpiProcessed">0</div>
+          <div class="text-[11px] text-slate-400 mt-1" id="kpiQueueSize">Queue: 0 tasks</div>
+        </div>
+
+        <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-4">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+            <span>Thành công (Valid)</span>
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+          </div>
+          <div class="text-xl font-bold text-emerald-400 font-mono" id="kpiSuccess">0</div>
+          <div class="text-[11px] text-slate-400 mt-1" id="kpiSuccessRate">Tỷ lệ: 100%</div>
+        </div>
+
+        <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-4">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+            <span>Thất bại / Lỗi</span>
+            <i class="fa-solid fa-circle-xmark text-rose-400"></i>
+          </div>
+          <div class="text-xl font-bold text-rose-400 font-mono" id="kpiFailed">0</div>
+          <div class="text-[11px] text-slate-400 mt-1">Được ghi nhận để retry</div>
+        </div>
+
+        <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-4">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1">
+            <span>Tổng tích lũy Corpus</span>
+            <i class="fa-solid fa-database text-violet-400"></i>
+          </div>
+          <div class="text-xl font-bold text-violet-300 font-mono" id="kpiTotalVisited">0</div>
+          <div class="text-[11px] text-slate-400 mt-1" id="kpiTotalChars">0 ký tự text sạch</div>
+        </div>
+
+      </div>
+
+      <!-- OVERALL PROGRESS BAR -->
+      <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5">
+        <div class="flex items-center justify-between text-xs mb-2">
+          <span class="font-semibold text-slate-300 flex items-center gap-2">
+            <i class="fa-solid fa-bars-progress text-indigo-400"></i> Tiến độ cào Nhóm mục tiêu
+          </span>
+          <span class="font-mono text-slate-300" id="progressSummaryText">0 / 3,638,908 URLs (0.0%)</span>
+        </div>
+        <div class="w-full bg-slate-900 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-700">
+          <div id="progressBarFill" class="bg-gradient-to-r from-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between items-center text-[11px] text-slate-500 mt-2">
+          <span id="elapsedTimeText">Thời gian phiên: 0s</span>
+          <span id="etaTimeText" class="font-mono text-indigo-400">ETA: Đang tính toán...</span>
+        </div>
+      </div>
+
+      <!-- LIVE SPEED CHART -->
+      <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-emerald-400"></i> Biến thiên Tốc độ Crawling thời gian thực (URLs / Giây)
+          </h3>
+          <span class="text-xs text-slate-400 font-mono">Rolling 30s window</span>
+        </div>
+        <div class="h-56 w-full">
+          <canvas id="speedChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 2: NHÓM DOMAIN ==================== -->
+    <div id="tab-domains" class="hidden space-y-6">
+      
+      <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-800/60 border border-slate-700/80 p-4 rounded-2xl">
+        <div class="flex items-center gap-2">
+          <input type="text" id="domainSearchInput" oninput="filterDomainsTable()" placeholder="Tìm kiếm domain (ví dụ: vinmec, dantri, 120ask)..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 w-72 focus:outline-none focus:border-indigo-500">
+          <select id="groupFilterSelect" onchange="filterDomainsTable()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+            <option value="all">Tất cả các nhóm (97 Domain)</option>
+            <option value="1" selected>Nhóm 1: Ổn định (86 Domain)</option>
+            <option value="2">Nhóm 2: Cần tinh chỉnh (2 Domain)</option>
+            <option value="3">Nhóm 3: Chết / Bị chặn (9 Domain)</option>
+          </select>
+        </div>
+        <div class="text-xs text-slate-400">
+          Hiển thị: <span id="displayedDomainsCount" class="font-bold text-white">0</span> domain
+        </div>
+      </div>
+
+      <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/80 text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-700">
+              <tr>
+                <th class="py-3 px-4">Domain</th>
+                <th class="py-3 px-4">Nhóm</th>
+                <th class="py-3 px-4 text-right">Tổng Corpus</th>
+                <th class="py-3 px-4 text-right">Đã cào</th>
+                <th class="py-3 px-4 text-right">Thành công</th>
+                <th class="py-3 px-4 text-right">Lỗi</th>
+                <th class="py-3 px-4 w-32">Tiến độ (%)</th>
+                <th class="py-3 px-4 text-right">Ký tự TB</th>
+                <th class="py-3 px-4 text-center">Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="domainsTableBody" class="divide-y divide-slate-800">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 3: URL THẤT BẠI & RETRY ==================== -->
+    <div id="tab-failed" class="hidden space-y-6">
+      
+      <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-800/60 border border-slate-700/80 p-4 rounded-2xl">
+        <div class="flex items-center gap-3">
+          <input type="text" id="failedSearchInput" onkeydown="if(event.key==='Enter') loadFailedUrls(1)" placeholder="Tìm kiếm theo URL, ID, lỗi..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 w-64 focus:outline-none focus:border-indigo-500">
+          <button onclick="loadFailedUrls(1)" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs text-slate-200 transition">
+            <i class="fa-solid fa-magnifying-glass"></i> Tìm
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="retryAllFailedUrls()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-rose-600/20 shadow-md transition">
+            <i class="fa-solid fa-rotate-right"></i> Cào lại toàn bộ URL lỗi
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/80 text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-700">
+              <tr>
+                <th class="py-3 px-4 w-16">ID</th>
+                <th class="py-3 px-4 w-40">Domain</th>
+                <th class="py-3 px-4">URL nguồn</th>
+                <th class="py-3 px-4 w-64">Chi tiết mã lỗi</th>
+                <th class="py-3 px-4 w-36">Thời gian</th>
+                <th class="py-3 px-4 w-24 text-center">Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="failedTableBody" class="divide-y divide-slate-800">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Failed Pagination -->
+        <div class="bg-slate-900/60 px-4 py-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <span id="failedPaginationInfo">Đang hiển thị...</span>
+          <div class="flex items-center gap-2">
+            <button id="btnFailedPrev" onclick="changeFailedPage(-1)" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 disabled:opacity-40">Trước</button>
+            <span id="failedPageNum" class="font-mono text-white">1</span>
+            <button id="btnFailedNext" onclick="changeFailedPage(1)" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 disabled:opacity-40">Sau</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 4: THẨM ĐỊNH SIDE-BY-SIDE ==================== -->
+    <div id="tab-inspector" class="hidden space-y-6">
+      
+      <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-800/60 border border-slate-700/80 p-4 rounded-2xl">
+        <div class="flex items-center gap-3">
+          <input type="text" id="docSearchInput" onkeydown="if(event.key==='Enter') loadDocuments(1)" placeholder="Nhập Doc ID hoặc từ khóa..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 w-64 focus:outline-none focus:border-indigo-500">
+          <button onclick="loadDocuments(1)" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs text-slate-200 transition">
+            <i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm
+          </button>
+        </div>
+
+        <!-- Document List Dropdown / Pagination -->
+        <div class="flex items-center gap-2 text-xs">
+          <span class="text-slate-400">Chọn tài liệu:</span>
+          <select id="docSelectBox" onchange="loadDocDetail(this.value)" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white max-w-xs focus:outline-none">
+            <option value="">-- Chọn bài viết đã cào --</option>
+          </select>
+          <button onclick="changeDocPage(-1)" class="px-2.5 py-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 text-slate-300"><i class="fa-solid fa-chevron-left"></i></button>
+          <span id="docPageLabel" class="text-xs text-slate-400 font-mono">1</span>
+          <button onclick="changeDocPage(1)" class="px-2.5 py-1.5 bg-slate-800 rounded-lg hover:bg-slate-700 text-slate-300"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </div>
+
+      <!-- SPLIT VIEW CONTAINER -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[650px]">
+        
+        <!-- CỘT TRÁI: NỘI DUNG MARKDOWN BÓC TÁCH (8 Cols) -->
+        <div class="lg:col-span-8 bg-slate-800/60 border border-slate-700/80 rounded-2xl p-6 flex flex-col shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
+            <div>
+              <span class="text-xs font-semibold uppercase tracking-wider text-indigo-400">Nội dung Bóc Tách (Markdown Preview)</span>
+              <h3 id="previewDocTitle" class="text-base font-bold text-white mt-0.5">Chọn một tài liệu để đối soát</h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="previewCharBadge" class="text-xs px-2.5 py-1 rounded-full bg-slate-700 text-slate-300 font-mono">0 ký tự</span>
+              <span id="previewIdBadge" class="text-xs px-2 py-1 rounded bg-indigo-500/20 text-indigo-300 font-mono">ID: -</span>
+            </div>
+          </div>
+
+          <!-- Markdown Content Body -->
+          <div id="previewMarkdownContainer" class="flex-1 overflow-y-auto max-h-[600px] bg-slate-950/70 p-5 rounded-xl border border-slate-800 text-sm markdown-body text-slate-200">
+            <p class="text-slate-500 italic text-center mt-20">Chưa chọn tài liệu nào. Vui lòng bấm vào danh sách bài viết bên trên để xem.</p>
+          </div>
+          
+          <div class="mt-3 text-[11px] text-slate-400 flex items-center justify-between">
+            <span id="previewPathText">Đường dẫn: crawler_output/documents/...</span>
+            <span class="text-emerald-400"><i class="fa-solid fa-check-double"></i> Đã bảo toàn Heading H2/H3</span>
+          </div>
+        </div>
+
+        <!-- CỘT PHẢI: NGUỒN GỐC & ĐỐI CHIẾU (4 Cols) -->
+        <div class="lg:col-span-4 bg-slate-800/60 border border-slate-700/80 rounded-2xl p-6 flex flex-col shadow-sm space-y-4">
+          <div class="border-b border-slate-700 pb-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-amber-400">Nguồn Gốc & Đối Soát Trực Quan</span>
+            <h4 class="text-sm font-bold text-white mt-0.5">Website Gốc & Metadata</h4>
+          </div>
+
+          <!-- Direct URL button -->
+          <div class="space-y-2">
+            <label class="text-xs text-slate-400">URL Gốc:</label>
+            <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-xs break-all text-slate-300 font-mono" id="previewSourceUrl">
+              (Chưa có URL)
+            </div>
+            <a id="btnOpenSourceUrl" href="#" target="_blank" class="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition shadow-md">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở URL gốc trên Tab mới để đối soát
+            </a>
+          </div>
+
+          <!-- Metadata Properties Card -->
+          <div class="space-y-2 flex-1">
+            <label class="text-xs text-slate-400">Thuộc tính Metadata:</label>
+            <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-xs space-y-2 font-mono">
+              <div class="flex justify-between"><span class="text-slate-500">Domain:</span> <span id="metaDomain" class="text-indigo-300">-</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">Trạng thái:</span> <span id="metaStatus" class="text-emerald-400">SUCCESS</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">Thời gian cào:</span> <span id="metaCrawledAt" class="text-slate-300">-</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">Cấu trúc:</span> <span class="text-slate-300">content.md + metadata.json</span></div>
+            </div>
+          </div>
+
+          <!-- JSON Metadata Toggle -->
+          <div>
+            <button onclick="toggleRawJson()" class="w-full py-2 bg-slate-700/60 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition">
+              <i class="fa-solid fa-code"></i> Xem metadata.json nguyên bản
+            </button>
+            <pre id="rawJsonBox" class="hidden mt-2 p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] font-mono text-emerald-400 max-h-48 overflow-y-auto"></pre>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- JAVASCRIPT ORCHESTRATION LOGIC -->
+  <script>
+    let speedChartInstance = null;
+    let speedHistory = [];
+    let speedLabels = [];
+    let currentFailedPage = 1;
+    let currentDocPage = 1;
+    let domainsCache = { group_1: [], group_2: [], group_3: [] };
+
+    // Initialize Chart
+    function initChart() {
+      const ctx = document.getElementById('speedChart').getContext('2d');
+      speedChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Array(30).fill(''),
+          datasets: [{
+            label: 'URLs / Giây',
+            data: Array(30).fill(0),
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(51, 65, 85, 0.4)' },
+              ticks: { color: '#94a3b8', font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    // Switch Tabs
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white');
+        btn.classList.add('text-slate-400');
+      });
+      document.getElementById('nav-' + tabId).classList.add('bg-indigo-600', 'text-white');
+      document.getElementById('nav-' + tabId).classList.remove('text-slate-400');
+
+      document.getElementById('tab-overview').classList.add('hidden');
+      document.getElementById('tab-domains').classList.add('hidden');
+      document.getElementById('tab-failed').classList.add('hidden');
+      document.getElementById('tab-inspector').classList.add('hidden');
+
+      document.getElementById(tabId).classList.remove('hidden');
+
+      if (tabId === 'tab-domains') loadDomainsData();
+      if (tabId === 'tab-failed') loadFailedUrls(1);
+      if (tabId === 'tab-inspector') loadDocuments(1);
+    }
+
+    // Update Status Pill
+    function updateStatusPill(state) {
+      const badge = document.getElementById('statusBadge');
+      const text = document.getElementById('statusText');
+      if (state === 'RUNNING') {
+        badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> RUNNING (Đang cào)';
+      } else if (state === 'PAUSED') {
+        badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span> PAUSED (Tạm dừng)';
+      } else if (state === 'STOPPED') {
+        badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30';
+        badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span> STOPPED (Đã dừng)';
+      } else {
+        badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-700 text-slate-300 border border-slate-600';
+        badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> IDLE (Sẵn sàng)';
+      }
+    }
+
+    // Update KPIs & Chart
+    function updateMetricsUI(data) {
+      if (!data) return;
+      const pipe = data.pipeline || {};
+      const corp = data.corpus || {};
+
+      updateStatusPill(pipe.state);
+
+      // KPIs
+      document.getElementById('kpiSpeed').innerText = (pipe.speed_doc_per_sec || 0) + ' doc/s';
+      document.getElementById('kpiSpeedMin').innerText = Math.round(pipe.speed_urls_per_min || 0) + ' URLs/phút';
+      document.getElementById('kpiProcessed').innerText = (pipe.total_processed || 0).toLocaleString();
+      document.getElementById('kpiQueueSize').innerText = 'Queue: ' + (pipe.queue_size || 0) + ' tasks';
+      document.getElementById('kpiSuccess').innerText = (pipe.total_success || 0).toLocaleString();
+      document.getElementById('kpiSuccessRate').innerText = 'Tỷ lệ: ' + (pipe.success_rate || 100) + '%';
+      document.getElementById('kpiFailed').innerText = (pipe.total_failed || 0).toLocaleString();
+      document.getElementById('kpiTotalVisited').innerText = (corp.total_visited || 0).toLocaleString();
+      document.getElementById('kpiTotalChars').innerText = ((corp.total_chars || 0) / (1024*1024)).toFixed(2) + ' MB text sạch';
+
+      // Update failed badge
+      const failedCount = corp.status_breakdown ? (corp.total_visited - (corp.status_breakdown.SUCCESS || 0)) : pipe.total_failed;
+      document.getElementById('badgeFailedCount').innerText = Math.max(0, failedCount || 0);
+
+      // Progress
+      const visited = corp.total_visited || pipe.total_processed || 0;
+      const targetTotal = 3638908;
+      const pct = Math.min(100, (visited / targetTotal * 100)).toFixed(2);
+      document.getElementById('progressSummaryText').innerText = visited.toLocaleString() + ' / ' + targetTotal.toLocaleString() + ' URLs (' + pct + '%)';
+      document.getElementById('progressBarFill').style.width = pct + '%';
+      document.getElementById('elapsedTimeText').innerText = 'Thời gian phiên: ' + Math.round(pipe.elapsed_seconds || 0) + 's';
+
+      if (pipe.eta_seconds) {
+        const mins = Math.round(pipe.eta_seconds / 60);
+        document.getElementById('etaTimeText').innerText = 'ETA: ~' + mins + ' phút';
+      } else {
+        document.getElementById('etaTimeText').innerText = 'ETA: Đang đo lường...';
+      }
+
+      // Update Chart
+      if (speedChartInstance) {
+        const currentSpeed = pipe.speed_doc_per_sec || 0;
+        speedChartInstance.data.datasets[0].data.shift();
+        speedChartInstance.data.datasets[0].data.push(currentSpeed);
+        speedChartInstance.update('none');
+      }
+    }
+
+    // Connect WebSocket / Fallback Polling
+    function setupTelemetry() {
+      let ws;
+      try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(`${protocol}//${window.location.host}/ws/telemetry`);
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          updateMetricsUI(data);
+        };
+        ws.onerror = () => startPollingFallback();
+        ws.onclose = () => startPollingFallback();
+      } catch (e) {
+        startPollingFallback();
+      }
+    }
+
+    function startPollingFallback() {
+      setInterval(async () => {
+        try {
+          const res = await fetch('/api/crawler/status');
+          const data = await res.json();
+          updateMetricsUI(data);
+        } catch (e) {}
+      }, 1500);
+    }
+
+    // Pipeline Controls
+    async function startCrawlFromUI() {
+      const groups = [];
+      if (document.getElementById('chkGroup1').checked) groups.push(1);
+      if (document.getElementById('chkGroup2').checked) groups.push(2);
+      const concurrency = parseInt(document.getElementById('inputConcurrency').value);
+      const limitVal = document.getElementById('inputLimit').value;
+      const limit = limitVal ? parseInt(limitVal) : null;
+
+      if (groups.length === 0) {
+        alert('Vui lòng chọn ít nhất 1 nhóm domain để cào!');
+        return;
+      }
+
+      const res = await fetch('/api/crawler/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groups, concurrency, limit })
+      });
+      const data = await res.json();
+      alert(data.message);
+    }
+
+    async function pauseCrawl() {
+      const res = await fetch('/api/crawler/pause', { method: 'POST' });
+      const data = await res.json();
+      if (!data.success) alert(data.message);
+    }
+
+    async function resumeCrawl() {
+      const res = await fetch('/api/crawler/resume', { method: 'POST' });
+      const data = await res.json();
+      if (!data.success) alert(data.message);
+    }
+
+    async function stopCrawl() {
+      if (confirm('Bạn có chắc chắn muốn dừng phiên crawl này?')) {
+        const res = await fetch('/api/crawler/stop', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message);
+      }
+    }
+
+    // --- DOMAINS TAB ---
+    async function loadDomainsData() {
+      const res = await fetch('/api/domains');
+      domainsCache = await res.json();
+      filterDomainsTable();
+    }
+
+    function filterDomainsTable() {
+      const query = document.getElementById('domainSearchInput').value.toLowerCase().trim();
+      const groupFilter = document.getElementById('groupFilterSelect').value;
+      let allDomains = [];
+
+      if (groupFilter === 'all') {
+        allDomains = [...(domainsCache.group_1 || []), ...(domainsCache.group_2 || []), ...(domainsCache.group_3 || [])];
+      } else if (groupFilter === '1') {
+        allDomains = domainsCache.group_1 || [];
+      } else if (groupFilter === '2') {
+        allDomains = domainsCache.group_2 || [];
+      } else if (groupFilter === '3') {
+        allDomains = domainsCache.group_3 || [];
+      }
+
+      if (query) {
+        allDomains = allDomains.filter(d => d.domain.toLowerCase().includes(query) || (d.note && d.note.toLowerCase().includes(query)));
+      }
+
+      document.getElementById('displayedDomainsCount').innerText = allDomains.length;
+      const tbody = document.getElementById('domainsTableBody');
+      tbody.innerHTML = '';
+
+      allDomains.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/40 transition';
+        const groupBadge = item.group_id === 1 ? '<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">Nhóm 1</span>' :
+                          (item.group_id === 2 ? '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold">Nhóm 2</span>' :
+                          '<span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold">Nhóm 3</span>');
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-medium text-white">
+            <a href="${item.website_url}" target="_blank" class="hover:underline text-indigo-400">${item.domain}</a>
+            <div class="text-[10px] text-slate-500">${item.note || ''}</div>
+          </td>
+          <td class="py-3 px-4">${groupBadge}</td>
+          <td class="py-3 px-4 text-right font-mono">${item.url_count.toLocaleString()}</td>
+          <td class="py-3 px-4 text-right font-mono">${item.crawled_count.toLocaleString()}</td>
+          <td class="py-3 px-4 text-right font-mono text-emerald-400">${item.success_count.toLocaleString()}</td>
+          <td class="py-3 px-4 text-right font-mono text-rose-400">${item.failed_count.toLocaleString()}</td>
+          <td class="py-3 px-4">
+            <div class="flex items-center gap-2">
+              <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-indigo-500 h-full rounded-full" style="width: ${Math.min(100, item.progress_percent)}%"></div>
+              </div>
+              <span class="font-mono text-[10px]">${item.progress_percent}%</span>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-right font-mono">${item.avg_chars.toLocaleString()}</td>
+          <td class="py-3 px-4 text-center">
+            <button onclick="crawlSingleDomain('${item.domain}')" class="px-2.5 py-1 bg-slate-700 hover:bg-indigo-600 rounded text-[11px] text-slate-200 transition">
+              Crawl domain này
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function crawlSingleDomain(domain) {
+      if (confirm(`Bạn muốn bắt đầu crawl riêng domain ${domain}?`)) {
+        const res = await fetch('/api/crawler/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domains: [domain], groups: [1, 2, 3], concurrency: 20 })
+        });
+        const data = await res.json();
+        alert(data.message);
+        switchTab('tab-overview');
+      }
+    }
+
+    // --- FAILED URLS TAB ---
+    async function loadFailedUrls(page = 1) {
+      currentFailedPage = page;
+      const search = document.getElementById('failedSearchInput').value.trim();
+      const res = await fetch(`/api/failed-urls?page=${page}&page_size=30&search=${encodeURIComponent(search)}`);
+      const data = await res.json();
+
+      const tbody = document.getElementById('failedTableBody');
+      tbody.innerHTML = '';
+
+      if (data.items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-500 italic">Không có URL lỗi nào được ghi nhận.</td></tr>';
+      } else {
+        data.items.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-800/40 transition';
+          tr.innerHTML = `
+            <td class="py-3 px-4 font-mono text-slate-400">${item.id}</td>
+            <td class="py-3 px-4 font-medium text-slate-300">${item.domain}</td>
+            <td class="py-3 px-4 font-mono text-[11px] text-slate-400 break-all">
+              <a href="${item.url}" target="_blank" class="hover:underline text-indigo-400">${item.url}</a>
+            </td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 rounded text-[11px] bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30">
+                ${item.error || 'Lỗi không xác định'}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-slate-500 text-[10px] font-mono">${(item.crawled_at || '').substring(0, 19)}</td>
+            <td class="py-3 px-4 text-center">
+              <button onclick="retrySingleUrl(${item.id})" class="px-2.5 py-1 bg-slate-700 hover:bg-emerald-600 rounded text-[11px] text-slate-200 transition">
+                <i class="fa-solid fa-rotate-right"></i> Retry
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('failedPageNum').innerText = data.page;
+      document.getElementById('failedPaginationInfo').innerText = `Hiển thị ${(data.page - 1) * 30 + 1} - ${Math.min(data.page * 30, data.total)} trên tổng ${data.total} URL lỗi`;
+      document.getElementById('btnFailedPrev').disabled = data.page <= 1;
+      document.getElementById('btnFailedNext').disabled = data.page >= data.total_pages;
+    }
+
+    function changeFailedPage(delta) {
+      loadFailedUrls(currentFailedPage + delta);
+    }
+
+    async function retrySingleUrl(id) {
+      const res = await fetch('/api/failed-urls/retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [id] })
+      });
+      const data = await res.json();
+      alert(`Đã đưa ${data.retried_count} URL vào hàng đợi cào lại.`);
+      loadFailedUrls(currentFailedPage);
+    }
+
+    async function retryAllFailedUrls() {
+      if (confirm('Bạn có chắc chắn muốn cào lại toàn bộ các URL đang bị lỗi?')) {
+        const res = await fetch('/api/failed-urls/retry-all', { method: 'POST' });
+        const data = await res.json();
+        alert(`Đã đưa ${data.retried_count} URL lỗi vào hàng đợi cào lại.`);
+        loadFailedUrls(1);
+      }
+    }
+
+    // --- DOCUMENTS INSPECTOR TAB ---
+    async function loadDocuments(page = 1) {
+      currentDocPage = page;
+      const search = document.getElementById('docSearchInput').value.trim();
+      const res = await fetch(`/api/documents?page=${page}&page_size=20&search=${encodeURIComponent(search)}`);
+      const data = await res.json();
+
+      const selectBox = document.getElementById('docSelectBox');
+      selectBox.innerHTML = '<option value="">-- Chọn bài viết đã cào --</option>';
+
+      data.items.forEach(doc => {
+        const opt = document.createElement('option');
+        opt.value = doc.id;
+        opt.innerText = `[${doc.id}] ${doc.domain} (${doc.char_count} chars)`;
+        selectBox.appendChild(opt);
+      });
+
+      document.getElementById('docPageLabel').innerText = `Trang ${data.page}/${data.total_pages}`;
+
+      if (data.items.length > 0) {
+        selectBox.value = data.items[0].id;
+        loadDocDetail(data.items[0].id);
+      }
+    }
+
+    function changeDocPage(delta) {
+      loadDocuments(Math.max(1, currentDocPage + delta));
+    }
+
+    async function loadDocDetail(docId) {
+      if (!docId) return;
+      const res = await fetch(`/api/documents/${docId}`);
+      if (!res.ok) {
+        alert('Không tải được bài viết này!');
+        return;
+      }
+      const data = await res.json();
+
+      document.getElementById('previewDocTitle').innerText = data.title || '(Không có tiêu đề)';
+      document.getElementById('previewCharBadge').innerText = data.char_count.toLocaleString() + ' ký tự';
+      document.getElementById('previewIdBadge').innerText = 'ID: ' + data.id;
+      document.getElementById('previewPathText').innerText = 'Đường dẫn: ' + data.path;
+
+      // Render Markdown
+      const htmlContent = marked.parse(data.content_md || '*Nội dung trống*');
+      document.getElementById('previewMarkdownContainer').innerHTML = htmlContent;
+
+      // Update Right Panel
+      document.getElementById('previewSourceUrl').innerText = data.url;
+      document.getElementById('btnOpenSourceUrl').href = data.url;
+      document.getElementById('metaDomain').innerText = data.domain;
+      document.getElementById('metaStatus').innerText = data.metadata ? data.metadata.status : 'SUCCESS';
+      document.getElementById('metaCrawledAt').innerText = data.crawled_at || '-';
+
+      // Raw JSON
+      document.getElementById('rawJsonBox').innerText = JSON.stringify(data.metadata, null, 2);
+    }
+
+    function toggleRawJson() {
+      const box = document.getElementById('rawJsonBox');
+      box.classList.toggle('hidden');
+    }
+
+    // Window Onload
+    window.onload = () => {
+      initChart();
+      setupTelemetry();
+    };
+  </script>
+</body>
+</html>
