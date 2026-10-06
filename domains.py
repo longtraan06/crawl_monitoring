@@ -158,27 +158,111 @@ def is_allowed_domain(domain: str, include_group_2: bool = False) -> bool:
     return is_domain_allowed(domain, target_groups)
 
 def get_all_domains_metadata() -> List[Dict[str, Any]]:
-    """Trả về danh sách 97 domain kèm thông số số lượng URL trong corpus và phân nhóm."""
-    stats_file = Path(__file__).resolve().parent.parent / "unique_website_stats.json"
+    """
+    Trả về danh sách 97 domain kèm thông số số lượng URL trong corpus và phân nhóm.
+    Tự động tìm kiếm nhiều biến thể tên file JSON và luôn có fallback đảm bảo không bao giờ bị rỗng.
+    """
+    pkg_dir = Path(__file__).resolve().parent
+    search_dirs = [pkg_dir / "data", pkg_dir.parent, pkg_dir]
+    file_names = [
+        "unique_website_stats.json",
+        "unique_domains.json",
+        "unique_domain.json",
+        "unique_website_urls.json",
+        "unique_websites.json",
+        "domains.json",
+    ]
+
+    stats_file = None
+    for s_dir in search_dirs:
+        for fname in file_names:
+            candidate = s_dir / fname
+            if candidate.exists() and candidate.is_file():
+                stats_file = candidate
+                break
+        if stats_file:
+            break
+
     results = []
-    
-    if stats_file.exists():
+    loaded_domains = set()
+
+    if stats_file and stats_file.exists():
         try:
             with open(stats_file, "r", encoding="utf-8") as f:
-                raw_stats = json.load(f)
-            for item in raw_stats:
-                d = item["domain"]
-                group = get_domain_group(d)
-                results.append({
-                    "domain": d,
-                    "website_url": item.get("website_url", f"https://{d}"),
-                    "url_count": item.get("url_count", 0),
-                    "percentage": item.get("percentage", 0.0),
-                    "group_id": group,
-                    "group_name": f"Nhóm {group}" if group > 0 else "Chưa phân nhóm",
-                    "note": DOMAIN_NOTES.get(d, "Hoạt động bình thường" if group == 1 else "")
-                })
+                raw_data = json.load(f)
+
+            # Trường hợp 1: Dạng danh sách các object [{"domain": "...", "url_count": ...}]
+            if isinstance(raw_data, list):
+                for item in raw_data:
+                    if isinstance(item, dict):
+                        d = item.get("domain") or item.get("website") or ""
+                        if not d and "website_url" in item:
+                            from urllib.parse import urlparse
+                            d = urlparse(item["website_url"]).netloc.lower()
+                        d = d.lower().strip()
+                        if d:
+                            group = get_domain_group(d)
+                            results.append({
+                                "domain": d,
+                                "website_url": item.get("website_url", f"https://{d}"),
+                                "url_count": item.get("url_count", item.get("count", 0)),
+                                "percentage": item.get("percentage", 0.0),
+                                "group_id": group,
+                                "group_name": f"Nhóm {group}" if group > 0 else "Chưa phân nhóm",
+                                "note": DOMAIN_NOTES.get(d, "Hoạt động bình thường" if group == 1 else "")
+                            })
+                            loaded_domains.add(d)
+                    elif isinstance(item, str):
+                        # Dạng danh sách string ["domain1", "domain2"]
+                        d = item.lower().strip()
+                        if d:
+                            group = get_domain_group(d)
+                            results.append({
+                                "domain": d,
+                                "website_url": f"https://{d}",
+                                "url_count": 0,
+                                "percentage": 0.0,
+                                "group_id": group,
+                                "group_name": f"Nhóm {group}" if group > 0 else "Chưa phân nhóm",
+                                "note": DOMAIN_NOTES.get(d, "Hoạt động bình thường" if group == 1 else "")
+                            })
+                            loaded_domains.add(d)
+
+            # Trường hợp 2: Dạng dict {"domain": count}
+            elif isinstance(raw_data, dict):
+                for d, cnt in raw_data.items():
+                    d = d.lower().strip()
+                    if d:
+                        group = get_domain_group(d)
+                        results.append({
+                            "domain": d,
+                            "website_url": f"https://{d}",
+                            "url_count": int(cnt) if isinstance(cnt, (int, float)) else 0,
+                            "percentage": 0.0,
+                            "group_id": group,
+                            "group_name": f"Nhóm {group}" if group > 0 else "Chưa phân nhóm",
+                            "note": DOMAIN_NOTES.get(d, "Hoạt động bình thường" if group == 1 else "")
+                        })
+                        loaded_domains.add(d)
         except Exception:
             pass
 
+    # FALLBACK BẮT BUỘC: Nếu không tìm thấy file hoặc thiếu domain, bù đắp từ bộ danh mục 97 domain có sẵn
+    all_known_domains = list(GROUP_1_STABLE_DOMAINS) + list(GROUP_2_SPECIAL_DOMAINS) + list(GROUP_3_DEAD_DOMAINS)
+    for d in all_known_domains:
+        if d not in loaded_domains:
+            group = get_domain_group(d)
+            results.append({
+                "domain": d,
+                "website_url": f"https://{d}",
+                "url_count": 0,
+                "percentage": 0.0,
+                "group_id": group,
+                "group_name": f"Nhóm {group}" if group > 0 else "Chưa phân nhóm",
+                "note": DOMAIN_NOTES.get(d, "Hoạt động bình thường" if group == 1 else "")
+            })
+            loaded_domains.add(d)
+
+    # Sắp xếp theo số lượng URL giảm dần
+    results.sort(key=lambda x: x.get("url_count", 0), reverse=True)
     return results

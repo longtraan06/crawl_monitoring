@@ -136,10 +136,10 @@
           <div class="space-y-2">
             <div class="flex justify-between items-center text-xs">
               <label class="font-semibold uppercase tracking-wider text-slate-400">Độ song song (Concurrency)</label>
-              <span id="concurrencyVal" class="text-indigo-400 font-bold font-mono">50 workers</span>
+              <span id="concurrencyVal" class="text-indigo-400 font-bold font-mono">100 workers</span>
             </div>
-            <input type="range" id="inputConcurrency" min="10" max="100" step="5" value="50" oninput="document.getElementById('concurrencyVal').innerText = this.value + ' workers'" class="w-full accent-indigo-500 cursor-pointer bg-slate-700 h-2 rounded-lg">
-            <p class="text-[11px] text-slate-500">Khuyến nghị: 40-60 workers cho tốc độ cao nhất mà không bị thắt cổ chai mạng.</p>
+            <input type="range" id="inputConcurrency" min="10" max="300" step="10" value="100" oninput="document.getElementById('concurrencyVal').innerText = this.value + ' workers'" class="w-full accent-indigo-500 cursor-pointer bg-slate-700 h-2 rounded-lg">
+            <p class="text-[11px] text-slate-500">Server mạnh (nhiều CPU/RAM): có thể kéo lên 150 - 250 workers để đạt tốc độ tối đa.</p>
           </div>
 
           <!-- Limit setting -->
@@ -854,6 +854,7 @@
     window.onload = () => {
       initChart();
       setupTelemetry();
+      loadDomainsData(); // Tự động nạp danh sách 97 domain ngay khi mở trang
     };
   </script>
 </body>

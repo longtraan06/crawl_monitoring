@@ -1,0 +1,778 @@
+[
+  {
+    "rank": 1,
+    "website_url": "http://www.cnkang.com",
+    "domain": "www.cnkang.com",
+    "url_count": 963438,
+    "percentage": 21.9226,
+    "sample_url": "http://www.cnkang.com/cm/201404/1145749.html"
+  },
+  {
+    "rank": 2,
+    "website_url": "http://www.120ask.com",
+    "domain": "www.120ask.com",
+    "url_count": 918479,
+    "percentage": 20.8996,
+    "sample_url": "http://www.120ask.com/question/1000024.htm"
+  },
+  {
+    "rank": 3,
+    "website_url": "https://www.familydoctor.com.cn",
+    "domain": "www.familydoctor.com.cn",
+    "url_count": 447453,
+    "percentage": 10.1816,
+    "sample_url": "https://www.familydoctor.com.cn/a/202110/2724050.html"
+  },
+  {
+    "rank": 4,
+    "website_url": "https://ask.39.net",
+    "domain": "ask.39.net",
+    "url_count": 337375,
+    "percentage": 7.6768,
+    "sample_url": "https://ask.39.net/question/100000370.html"
+  },
+  {
+    "rank": 5,
+    "website_url": "https://zysjonline.com",
+    "domain": "zysjonline.com",
+    "url_count": 243347,
+    "percentage": 5.5373,
+    "sample_url": "https://zysjonline.com/articles/misc/100/"
+  },
+  {
+    "rank": 6,
+    "website_url": "https://www.a-hospital.com",
+    "domain": "www.a-hospital.com",
+    "url_count": 169339,
+    "percentage": 3.8532,
+    "sample_url": "https://www.a-hospital.com/w/%CE%91%E5%9C%B0%E4%B8%AD%E6%B5%B7%E8%B4%AB%E8%A1%80"
+  },
+  {
+    "rank": 7,
+    "website_url": "https://suckhoecongdongonline.vn",
+    "domain": "suckhoecongdongonline.vn",
+    "url_count": 154503,
+    "percentage": 3.5157,
+    "sample_url": "https://suckhoecongdongonline.vn/"
+  },
+  {
+    "rank": 8,
+    "website_url": "https://zhongyibaodian.net",
+    "domain": "zhongyibaodian.net",
+    "url_count": 146700,
+    "percentage": 3.3381,
+    "sample_url": "https://zhongyibaodian.net/a/10.html"
+  },
+  {
+    "rank": 9,
+    "website_url": "https://suckhoedoisong.vn",
+    "domain": "suckhoedoisong.vn",
+    "url_count": 85823,
+    "percentage": 1.9529,
+    "sample_url": "https://suckhoedoisong.vn/-tai-chong-vung-ve-1692341.htm"
+  },
+  {
+    "rank": 10,
+    "website_url": "https://nhathuoclongchau.com.vn",
+    "domain": "nhathuoclongchau.com.vn",
+    "url_count": 79598,
+    "percentage": 1.8112,
+    "sample_url": "https://nhathuoclongchau.com.vn/bai-viet/1-banh-trung-thu-bang-may-bat-com-goc-nhin-dinh-duong-va-suc-khoe.html"
+  },
+  {
+    "rank": 11,
+    "website_url": "http://www.zydcd.com",
+    "domain": "www.zydcd.com",
+    "url_count": 78680,
+    "percentage": 1.7903,
+    "sample_url": "http://www.zydcd.com/YiAn/"
+  },
+  {
+    "rank": 12,
+    "website_url": "https://thanhnien.vn",
+    "domain": "thanhnien.vn",
+    "url_count": 72111,
+    "percentage": 1.6409,
+    "sample_url": "https://thanhnien.vn/-phu-huynh-anh-bo-quen-doi-mat-cua-con-nho-185179557.htm"
+  },
+  {
+    "rank": 13,
+    "website_url": "http://www.wujue.com",
+    "domain": "www.wujue.com",
+    "url_count": 53341,
+    "percentage": 1.2138,
+    "sample_url": "http://www.wujue.com/Article/kaoshi/200704/10983.html"
+  },
+  {
+    "rank": 14,
+    "website_url": "https://www.youlai.cn",
+    "domain": "www.youlai.cn",
+    "url_count": 46119,
+    "percentage": 1.0494,
+    "sample_url": "https://www.youlai.cn/yyk/article/104188.html"
+  },
+  {
+    "rank": 15,
+    "website_url": "https://laodong.vn",
+    "domain": "laodong.vn",
+    "url_count": 31282,
+    "percentage": 0.7118,
+    "sample_url": "https://laodong.vn/an/nhung-mon-an-khong-nen-thuong-thuc-trong-3-ngay-tet-591418.ldo"
+  },
+  {
+    "rank": 16,
+    "website_url": "http://baby.39.net",
+    "domain": "baby.39.net",
+    "url_count": 27621,
+    "percentage": 0.6285,
+    "sample_url": "http://baby.39.net/a/070910/123505.html"
+  },
+  {
+    "rank": 17,
+    "website_url": "https://phunusuckhoe.giadinhonline.vn",
+    "domain": "phunusuckhoe.giadinhonline.vn",
+    "url_count": 27577,
+    "percentage": 0.6275,
+    "sample_url": "https://phunusuckhoe.giadinhonline.vn/1-6-benh-nhan-mac-ung-thu-deu-do-viem-5-vi-tri-tren-co-the-bi-viem-canh-bao-ung-thu-dang-den-gan-c12a372458.html"
+  },
+  {
+    "rank": 18,
+    "website_url": "https://www.vinmec.com",
+    "domain": "www.vinmec.com",
+    "url_count": 26129,
+    "percentage": 0.5946,
+    "sample_url": "https://www.vinmec.com/vie/bai-viet/-benh-tim-thieu-mau-cuc-bo-man-co-phai-la-nhoi-mau-co-tim-vi"
+  },
+  {
+    "rank": 19,
+    "website_url": "https://bingli.iiyi.com",
+    "domain": "bingli.iiyi.com",
+    "url_count": 24990,
+    "percentage": 0.5686,
+    "sample_url": "https://bingli.iiyi.com/show/100-1.html"
+  },
+  {
+    "rank": 20,
+    "website_url": "https://medlatec.vn",
+    "domain": "medlatec.vn",
+    "url_count": 24762,
+    "percentage": 0.5634,
+    "sample_url": "https://medlatec.vn/"
+  },
+  {
+    "rank": 21,
+    "website_url": "http://qihuangzhishu.com",
+    "domain": "qihuangzhishu.com",
+    "url_count": 23637,
+    "percentage": 0.5379,
+    "sample_url": "http://qihuangzhishu.com/1002/10.htm"
+  },
+  {
+    "rank": 22,
+    "website_url": "https://jbk.39.net",
+    "domain": "jbk.39.net",
+    "url_count": 19142,
+    "percentage": 0.4356,
+    "sample_url": "https://jbk.39.net/a1kydbmqfxgb/"
+  },
+  {
+    "rank": 23,
+    "website_url": "https://giadinhonline.vn",
+    "domain": "giadinhonline.vn",
+    "url_count": 16729,
+    "percentage": 0.3807,
+    "sample_url": "https://giadinhonline.vn/1-6-dan-so-the-gioi-bi-anh-huong-do-khong-co-con-d190107.html"
+  },
+  {
+    "rank": 24,
+    "website_url": "https://baohaiphong.vn",
+    "domain": "baohaiphong.vn",
+    "url_count": 16286,
+    "percentage": 0.3706,
+    "sample_url": "https://baohaiphong.vn/0-gio-ngay-4-3-het-cach-ly-dich-covid-19-voi-xa-son-loi-va-thanh-cong-cua-nganh-y-te-441745.html"
+  },
+  {
+    "rank": 25,
+    "website_url": "https://baonghean.vn",
+    "domain": "baonghean.vn",
+    "url_count": 15941,
+    "percentage": 0.3627,
+    "sample_url": "https://baonghean.vn/1-000-nguoi-tham-gia-ngay-toan-dan-hien-mau-tinh-nguyen-10135008.html"
+  },
+  {
+    "rank": 26,
+    "website_url": "https://vietnamnet.vn",
+    "domain": "vietnamnet.vn",
+    "url_count": 15543,
+    "percentage": 0.3537,
+    "sample_url": "https://vietnamnet.vn/1-000-benh-nhan-can-xa-tri-moi-ngay-benh-vien-k-mua-them-may-100-ty-dong-2410008.html"
+  },
+  {
+    "rank": 27,
+    "website_url": "http://care.39.net",
+    "domain": "care.39.net",
+    "url_count": 15134,
+    "percentage": 0.3444,
+    "sample_url": "http://care.39.net/a/071027/145917.html"
+  },
+  {
+    "rank": 28,
+    "website_url": "https://test.pmphai.com",
+    "domain": "test.pmphai.com",
+    "url_count": 15120,
+    "percentage": 0.344,
+    "sample_url": "https://test.pmphai.com/jeesitede/appcase/toPcDetail?sessionId=&knowledgeLibPrefix=case&id=11911"
+  },
+  {
+    "rank": 29,
+    "website_url": "https://baodanang.vn",
+    "domain": "baodanang.vn",
+    "url_count": 14500,
+    "percentage": 0.3299,
+    "sample_url": "https://baodanang.vn/1-000-nguoi-tham-gia-ngay-hoi-hien-mau-trai-tim-song-han-3239955.html"
+  },
+  {
+    "rank": 30,
+    "website_url": "https://tiemchunglongchau.com.vn",
+    "domain": "tiemchunglongchau.com.vn",
+    "url_count": 13281,
+    "percentage": 0.3022,
+    "sample_url": "https://tiemchunglongchau.com.vn/kien-thuc-tiem-chung/1-khoanh-banh-tet-bao-nhieu-calo-an-banh-tet-co-map-khong"
+  },
+  {
+    "rank": 31,
+    "website_url": "http://fitness.39.net",
+    "domain": "fitness.39.net",
+    "url_count": 12066,
+    "percentage": 0.2746,
+    "sample_url": "http://fitness.39.net/a/080103/219735.html"
+  },
+  {
+    "rank": 32,
+    "website_url": "https://baocantho.com.vn",
+    "domain": "baocantho.com.vn",
+    "url_count": 12016,
+    "percentage": 0.2734,
+    "sample_url": "https://baocantho.com.vn/-1-lon-cola-1-gio-chay-bo-hieu-qua-hon-thong-tin-ham-luong-calorie-a72528.html"
+  },
+  {
+    "rank": 33,
+    "website_url": "https://hellobacsi.com",
+    "domain": "hellobacsi.com",
+    "url_count": 11747,
+    "percentage": 0.2673,
+    "sample_url": "https://hellobacsi.com/an-uong-lanh-manh/5-dieu-ban-nen-biet-khi-su-dung-nhan-sam-hoa-ky/"
+  },
+  {
+    "rank": 34,
+    "website_url": "http://woman.39.net",
+    "domain": "woman.39.net",
+    "url_count": 11687,
+    "percentage": 0.2659,
+    "sample_url": "http://woman.39.net/a/080519/438481.html"
+  },
+  {
+    "rank": 35,
+    "website_url": "http://food.39.net",
+    "domain": "food.39.net",
+    "url_count": 11024,
+    "percentage": 0.2508,
+    "sample_url": "http://food.39.net/a/080319/285155.html"
+  },
+  {
+    "rank": 36,
+    "website_url": "https://baoangiang.com.vn",
+    "domain": "baoangiang.com.vn",
+    "url_count": 10738,
+    "percentage": 0.2443,
+    "sample_url": "https://baoangiang.com.vn/-3-dung-3-nen-nguyen-tac-vang-moi-ngay-giup-song-lau-khoe-manh-a379318.html"
+  },
+  {
+    "rank": 37,
+    "website_url": "http://fk.39.net",
+    "domain": "fk.39.net",
+    "url_count": 9812,
+    "percentage": 0.2233,
+    "sample_url": "http://fk.39.net/a/070817/97470.html"
+  },
+  {
+    "rank": 38,
+    "website_url": "https://vov.vn",
+    "domain": "vov.vn",
+    "url_count": 9784,
+    "percentage": 0.2226,
+    "sample_url": "https://vov.vn/an-sach-song-khoe/1-tan-mang-tuoi-bi-niem-phong-tai-cho-dong-ha-khong-co-chat-vang-o-501115.vov"
+  },
+  {
+    "rank": 39,
+    "website_url": "http://cancer.39.net",
+    "domain": "cancer.39.net",
+    "url_count": 8415,
+    "percentage": 0.1915,
+    "sample_url": "http://cancer.39.net/a/161014/4993571.html"
+  },
+  {
+    "rank": 40,
+    "website_url": "https://khoahocphothong.vn",
+    "domain": "khoahocphothong.vn",
+    "url_count": 8143,
+    "percentage": 0.1853,
+    "sample_url": "https://khoahocphothong.vn/03-benh-nhan-may-man-duoc-ghep-giac-mac-mien-phi-tai-bv-fv-237449.html"
+  },
+  {
+    "rank": 41,
+    "website_url": "https://jb39.com",
+    "domain": "jb39.com",
+    "url_count": 7306,
+    "percentage": 0.1662,
+    "sample_url": "https://jb39.com/jibing/ADiSenBing258859.htm"
+  },
+  {
+    "rank": 42,
+    "website_url": "https://youmed.vn",
+    "domain": "youmed.vn",
+    "url_count": 7189,
+    "percentage": 0.1636,
+    "sample_url": "https://youmed.vn/tin-tuc/10-bai-tap-tang-chieu-cao-truoc-khi-di-ngu/"
+  },
+  {
+    "rank": 43,
+    "website_url": "https://vov2.vov.vn",
+    "domain": "vov2.vov.vn",
+    "url_count": 6899,
+    "percentage": 0.157,
+    "sample_url": "https://vov2.vov.vn/chuyen-tham-kin/cuon-vao-dem-xuan-32256.vov2"
+  },
+  {
+    "rank": 44,
+    "website_url": "http://nk.39.net",
+    "domain": "nk.39.net",
+    "url_count": 6650,
+    "percentage": 0.1513,
+    "sample_url": "http://nk.39.net/a/080708/552194.html"
+  },
+  {
+    "rank": 45,
+    "website_url": "https://phuyen.baodaklak.vn",
+    "domain": "phuyen.baodaklak.vn",
+    "url_count": 6252,
+    "percentage": 0.1423,
+    "sample_url": "https://phuyen.baodaklak.vn/300/321037/y-me-nguoi-uy-tin-mot-long-voi-van-hoa-dan-toc/"
+  },
+  {
+    "rank": 46,
+    "website_url": "https://www.msdmanuals.cn",
+    "domain": "www.msdmanuals.cn",
+    "url_count": 6173,
+    "percentage": 0.1405,
+    "sample_url": "https://www.msdmanuals.cn/home/blood-disorders"
+  },
+  {
+    "rank": 47,
+    "website_url": "http://heart.39.net",
+    "domain": "heart.39.net",
+    "url_count": 5965,
+    "percentage": 0.1357,
+    "sample_url": "http://heart.39.net/a/070822/124957.html"
+  },
+  {
+    "rank": 48,
+    "website_url": "https://article.iiyi.com",
+    "domain": "article.iiyi.com",
+    "url_count": 5641,
+    "percentage": 0.1284,
+    "sample_url": "https://article.iiyi.com/detail/10028.html"
+  },
+  {
+    "rank": 49,
+    "website_url": "https://suckhoeviet.org.vn",
+    "domain": "suckhoeviet.org.vn",
+    "url_count": 5627,
+    "percentage": 0.128,
+    "sample_url": "https://suckhoeviet.org.vn/03-nguyen-tac-cha-me-can-biet-khi-cho-tre-uong-oresol-5319.html"
+  },
+  {
+    "rank": 50,
+    "website_url": "https://baoquangtri.vn",
+    "domain": "baoquangtri.vn",
+    "url_count": 5483,
+    "percentage": 0.1248,
+    "sample_url": "https://baoquangtri.vn/Multimedia/202202/nhung-thien-than-ao-trang-noi-tuyen-dau-chong-dich-covid-19-2198176/"
+  },
+  {
+    "rank": 51,
+    "website_url": "https://pmc-ecm-healthblog.beta.pharmacity.io",
+    "domain": "pmc-ecm-healthblog.beta.pharmacity.io",
+    "url_count": 5333,
+    "percentage": 0.1214,
+    "sample_url": "https://pmc-ecm-healthblog.beta.pharmacity.io/1-cay-xuc-xich-40g-bao-nhieu-calo-bi-quyet-an-khong-lo-tang-can/"
+  },
+  {
+    "rank": 52,
+    "website_url": "http://man.39.net",
+    "domain": "man.39.net",
+    "url_count": 5320,
+    "percentage": 0.1211,
+    "sample_url": "http://man.39.net/a/070807/75670.html"
+  },
+  {
+    "rank": 53,
+    "website_url": "https://nhandan.vn",
+    "domain": "nhandan.vn",
+    "url_count": 5225,
+    "percentage": 0.1189,
+    "sample_url": "https://nhandan.vn/1-mieng-banh-chung-bang-45-phut-chay-bo-nen-an-the-nao-de-nhe-nhang-don-tet-post943576.html"
+  },
+  {
+    "rank": 54,
+    "website_url": "https://baovinhlong.com.vn",
+    "domain": "baovinhlong.com.vn",
+    "url_count": 5113,
+    "percentage": 0.1163,
+    "sample_url": "https://baovinhlong.com.vn/infographics/202109/infographic-thong-diep-5t-phao-dai-chong-dich-covid-19-trong-thoi-gian-tang-cuong-gian-cach-xa-hoi-3076847/"
+  },
+  {
+    "rank": 55,
+    "website_url": "http://gan.39.net",
+    "domain": "gan.39.net",
+    "url_count": 5027,
+    "percentage": 0.1144,
+    "sample_url": "http://gan.39.net/a/080819/615789.html"
+  },
+  {
+    "rank": 56,
+    "website_url": "https://tamanhhospital.vn",
+    "domain": "tamanhhospital.vn",
+    "url_count": 4261,
+    "percentage": 0.097,
+    "sample_url": "https://tamanhhospital.vn/tin-tuc/10-nam-bi-tieu-chay-vi-benh-hiem/"
+  },
+  {
+    "rank": 57,
+    "website_url": "http://tnb.39.net",
+    "domain": "tnb.39.net",
+    "url_count": 4178,
+    "percentage": 0.0951,
+    "sample_url": "http://tnb.39.net/a/070815/94511.html"
+  },
+  {
+    "rank": 58,
+    "website_url": "http://wei.39.net",
+    "domain": "wei.39.net",
+    "url_count": 3894,
+    "percentage": 0.0886,
+    "sample_url": "http://wei.39.net/a/070816/95768.html"
+  },
+  {
+    "rank": 59,
+    "website_url": "https://tuoitre.vn",
+    "domain": "tuoitre.vn",
+    "url_count": 3893,
+    "percentage": 0.0886,
+    "sample_url": "https://tuoitre.vn/1-000-nguoi-dan-duoc-kham-mien-phi-ai-sap-ho-tro-y-te-co-so-2025080217025175.htm"
+  },
+  {
+    "rank": 60,
+    "website_url": "https://baidianfeng.familydoctor.com.cn",
+    "domain": "baidianfeng.familydoctor.com.cn",
+    "url_count": 3798,
+    "percentage": 0.0864,
+    "sample_url": "https://baidianfeng.familydoctor.com.cn/"
+  },
+  {
+    "rank": 61,
+    "website_url": "https://www.qdnd.vn",
+    "domain": "www.qdnd.vn",
+    "url_count": 3700,
+    "percentage": 0.0842,
+    "sample_url": "https://www.qdnd.vn/80-nam-cach-mang-thang-tam-va-quoc-khanh-2-9/bao-dam-y-te-dip-dai-le-843873"
+  },
+  {
+    "rank": 62,
+    "website_url": "https://www.vietnamplus.vn",
+    "domain": "www.vietnamplus.vn",
+    "url_count": 3695,
+    "percentage": 0.0841,
+    "sample_url": "https://www.vietnamplus.vn/10-bai-tap-co-bung-ban-co-the-thuc-hien-trong-khi-xem-netflix-tren-giuong-post978414.vnp"
+  },
+  {
+    "rank": 63,
+    "website_url": "https://baogialai.com.vn",
+    "domain": "baogialai.com.vn",
+    "url_count": 3290,
+    "percentage": 0.0749,
+    "sample_url": "https://baogialai.com.vn/1-2-tep-toi-moi-ngay-dieu-gi-xay-ra-cho-huyet-ap-mo-mau-va-mach-mau-post583049.html"
+  },
+  {
+    "rank": 64,
+    "website_url": "http://shen.39.net",
+    "domain": "shen.39.net",
+    "url_count": 3223,
+    "percentage": 0.0733,
+    "sample_url": "http://shen.39.net/a/090520/878677.html"
+  },
+  {
+    "rank": 65,
+    "website_url": "http://ek.39.net",
+    "domain": "ek.39.net",
+    "url_count": 3222,
+    "percentage": 0.0733,
+    "sample_url": "http://ek.39.net/a/070820/103972.html"
+  },
+  {
+    "rank": 66,
+    "website_url": "https://tienphong.vn",
+    "domain": "tienphong.vn",
+    "url_count": 3021,
+    "percentage": 0.0687,
+    "sample_url": "https://tienphong.vn/10-nam-vinmec-central-park-tu-benh-vien-quoc-te-den-khat-vong-kien-tao-mo-hinh-y-hoc-dua-tren-gia-tri-post1807638.tpo"
+  },
+  {
+    "rank": 67,
+    "website_url": "https://thaythuocvietnam.vn",
+    "domain": "thaythuocvietnam.vn",
+    "url_count": 2927,
+    "percentage": 0.0666,
+    "sample_url": "https://thaythuocvietnam.vn/10-bai-tap-thoat-vi-dia-dem-cho-hieu-qua-cao/"
+  },
+  {
+    "rank": 68,
+    "website_url": "https://baoquangninh.vn",
+    "domain": "baoquangninh.vn",
+    "url_count": 2912,
+    "percentage": 0.0663,
+    "sample_url": "https://baoquangninh.vn/1-000-co-so-y-te-ket-noi-he-thong-kham-chua-benh-tu-xa-2502044.html"
+  },
+  {
+    "rank": 69,
+    "website_url": "https://bachmai.gov.vn",
+    "domain": "bachmai.gov.vn",
+    "url_count": 2783,
+    "percentage": 0.0633,
+    "sample_url": "https://bachmai.gov.vn/bai-viet/-nguoi-dan-se-duoc-thu-huong-chat-luong-kham-chua-benh-quoc-te-ngay-tai-benh-vien-bach-mai--9867?id=da6d8b2d-c5bd-c612-e89c-e85f802063b4"
+  },
+  {
+    "rank": 70,
+    "website_url": "https://www.baidu.com",
+    "domain": "www.baidu.com",
+    "url_count": 2631,
+    "percentage": 0.0599,
+    "sample_url": "https://www.baidu.com/bh/dict/ydxx_10317034174156621793?from=dicta&sf_ref=med_pc&sf_ch=ch_med_pc"
+  },
+  {
+    "rank": 71,
+    "website_url": "https://baochinhphu.vn",
+    "domain": "baochinhphu.vn",
+    "url_count": 2302,
+    "percentage": 0.0524,
+    "sample_url": "https://baochinhphu.vn/100-benh-vien-phai-trien-khai-benh-an-dien-tu-truoc-thang-10-2025-102250319135405888.htm"
+  },
+  {
+    "rank": 72,
+    "website_url": "https://dantri.com.vn",
+    "domain": "dantri.com.vn",
+    "url_count": 2063,
+    "percentage": 0.0469,
+    "sample_url": "https://dantri.com.vn/doi-song/bac-sy-vien-k-chi-ra-sai-lam-an-uong-khien-nhieu-nguoi-viet-mac-ung-thu-da-day-20190709072140099.htm"
+  },
+  {
+    "rank": 73,
+    "website_url": "http://gk.39.net",
+    "domain": "gk.39.net",
+    "url_count": 2059,
+    "percentage": 0.0469,
+    "sample_url": "http://gk.39.net/a/070827/124788.html"
+  },
+  {
+    "rank": 74,
+    "website_url": "https://vnexpress.net",
+    "domain": "vnexpress.net",
+    "url_count": 2055,
+    "percentage": 0.0468,
+    "sample_url": "https://vnexpress.net/10-000-don-vi-mau-hien-kip-bo-sung-cho-dieu-tri-sau-tet-5046292.html"
+  },
+  {
+    "rank": 75,
+    "website_url": "https://baolangson.vn",
+    "domain": "baolangson.vn",
+    "url_count": 1981,
+    "percentage": 0.0451,
+    "sample_url": "https://baolangson.vn/1-000-don-vi-mau-tu-ha-noi-chi-vien-cho-tp-ho-chi-minh-1438563.html"
+  },
+  {
+    "rank": 76,
+    "website_url": "https://www.sggp.org.vn",
+    "domain": "www.sggp.org.vn",
+    "url_count": 1853,
+    "percentage": 0.0422,
+    "sample_url": "https://www.sggp.org.vn/1-benh-nhan-tu-vong-sau-khi-an-banh-mi-post770696.html"
+  },
+  {
+    "rank": 77,
+    "website_url": "http://gc.39.net",
+    "domain": "gc.39.net",
+    "url_count": 1746,
+    "percentage": 0.0397,
+    "sample_url": "http://gc.39.net/a/090710/918452.html"
+  },
+  {
+    "rank": 78,
+    "website_url": "http://pf.39.net",
+    "domain": "pf.39.net",
+    "url_count": 1538,
+    "percentage": 0.035,
+    "sample_url": "http://pf.39.net/a/090125/769033.html"
+  },
+  {
+    "rank": 79,
+    "website_url": "http://health.people.com.cn",
+    "domain": "health.people.com.cn",
+    "url_count": 1348,
+    "percentage": 0.0307,
+    "sample_url": "http://health.people.com.cn/n1/2021/0903/c14739-32216450.html"
+  },
+  {
+    "rank": 80,
+    "website_url": "https://baophutho.vn",
+    "domain": "baophutho.vn",
+    "url_count": 1288,
+    "percentage": 0.0293,
+    "sample_url": "https://baophutho.vn/10-duong-chat-tot-cho-nao-bo-si-tu-nen-bo-sung-truoc-ngay-thi-234906.htm"
+  },
+  {
+    "rank": 81,
+    "website_url": "https://hanoimoi.vn",
+    "domain": "hanoimoi.vn",
+    "url_count": 1283,
+    "percentage": 0.0292,
+    "sample_url": "https://hanoimoi.vn/100-benh-vien-cong-lap-ha-noi-trien-khai-benh-an-dien-tu-717971.html"
+  },
+  {
+    "rank": 82,
+    "website_url": "https://benhviennhitrunguong.gov.vn",
+    "domain": "benhviennhitrunguong.gov.vn",
+    "url_count": 1200,
+    "percentage": 0.0273,
+    "sample_url": "https://benhviennhitrunguong.gov.vn/08-tre-ngo-doc-do-an-qua-hong-trau-da-ra-vien.html"
+  },
+  {
+    "rank": 83,
+    "website_url": "https://baotayninh.vn",
+    "domain": "baotayninh.vn",
+    "url_count": 1198,
+    "percentage": 0.0273,
+    "sample_url": "https://baotayninh.vn/10-thuc-pham-lanh-manh-nhat-giup-cai-thien-suc-khoe-toan-dien-139587.html"
+  },
+  {
+    "rank": 84,
+    "website_url": "http://sj.39.net",
+    "domain": "sj.39.net",
+    "url_count": 942,
+    "percentage": 0.0214,
+    "sample_url": "http://sj.39.net/a/090805/947726.html"
+  },
+  {
+    "rank": 85,
+    "website_url": "https://baothanhhoa.vn",
+    "domain": "baothanhhoa.vn",
+    "url_count": 782,
+    "percentage": 0.0178,
+    "sample_url": "https://baothanhhoa.vn/1-560-hoc-sinh-duoc-kham-mat-mien-phi-280834.htm"
+  },
+  {
+    "rank": 86,
+    "website_url": "http://byby.39.net",
+    "domain": "byby.39.net",
+    "url_count": 439,
+    "percentage": 0.01,
+    "sample_url": "http://byby.39.net/a/090410/837729.html"
+  },
+  {
+    "rank": 87,
+    "website_url": "https://benhvienvietduc.org",
+    "domain": "benhvienvietduc.org",
+    "url_count": 425,
+    "percentage": 0.0097,
+    "sample_url": "https://benhvienvietduc.org/10-nam-chuan-bi-cho-cuoc-mo-nao-thuc-tinh-o-viet-nam.html"
+  },
+  {
+    "rank": 88,
+    "website_url": "https://www.pharmacity.vn",
+    "domain": "www.pharmacity.vn",
+    "url_count": 69,
+    "percentage": 0.0016,
+    "sample_url": "https://www.pharmacity.vn/5-cach-tay-not-ruoi-tai-nha-don-gian-hieu-qua-tu-thien-nhien.htm"
+  },
+  {
+    "rank": 89,
+    "website_url": "https://www.familydoctor.cn",
+    "domain": "www.familydoctor.cn",
+    "url_count": 44,
+    "percentage": 0.001,
+    "sample_url": "https://www.familydoctor.cn/a/201304/429687.html"
+  },
+  {
+    "rank": 90,
+    "website_url": "http://qy.familydoctor.com.cn",
+    "domain": "qy.familydoctor.com.cn",
+    "url_count": 40,
+    "percentage": 0.0009,
+    "sample_url": "http://qy.familydoctor.com.cn/a/201404/599783.html"
+  },
+  {
+    "rank": 91,
+    "website_url": "https://v.familydoctor.com.cn",
+    "domain": "v.familydoctor.com.cn",
+    "url_count": 10,
+    "percentage": 0.0002,
+    "sample_url": "https://v.familydoctor.com.cn/a/201408/701814.html"
+  },
+  {
+    "rank": 92,
+    "website_url": "http://ask.familydoctor.com.cn",
+    "domain": "ask.familydoctor.com.cn",
+    "url_count": 3,
+    "percentage": 0.0001,
+    "sample_url": "http://ask.familydoctor.com.cn/q/10420069.html"
+  },
+  {
+    "rank": 93,
+    "website_url": "https://mega.vietnamplus.vn",
+    "domain": "mega.vietnamplus.vn",
+    "url_count": 2,
+    "percentage": 0.0,
+    "sample_url": "https://mega.vietnamplus.vn/thai-huong-nu-anh-hung-dam-me-lam-cho-dat-no-hoa-5415.html"
+  },
+  {
+    "rank": 94,
+    "website_url": "http://yanglao.familydoctor.com.cn",
+    "domain": "yanglao.familydoctor.com.cn",
+    "url_count": 2,
+    "percentage": 0.0,
+    "sample_url": "http://yanglao.familydoctor.com.cn/a/201601/930045.html"
+  },
+  {
+    "rank": 95,
+    "website_url": "http://special.vietnamplus.vn",
+    "domain": "special.vietnamplus.vn",
+    "url_count": 1,
+    "percentage": 0.0,
+    "sample_url": "http://special.vietnamplus.vn/benh_vien_nhan_ai"
+  },
+  {
+    "rank": 96,
+    "website_url": "http://fk.99.com.cn",
+    "domain": "fk.99.com.cn",
+    "url_count": 1,
+    "percentage": 0.0,
+    "sample_url": "http://fk.99.com.cn/news/410997.html"
+  },
+  {
+    "rank": 97,
+    "website_url": "https://ypk.familydoctor.com.cn",
+    "domain": "ypk.familydoctor.com.cn",
+    "url_count": 1,
+    "percentage": 0.0,
+    "sample_url": "https://ypk.familydoctor.com.cn/267067/"
+  }
+]

@@ -14,7 +14,7 @@ CORPUS_PARQUET_PATH = (
     if (DATA_DIR / "links_corpus.parquet").exists()
     else PROJECT_ROOT / "links_corpus.parquet"
 )
-OUTPUT_DIR = PROJECT_ROOT / "crawler_output"
+OUTPUT_DIR = Path(os.getenv("CRAWLER_OUTPUT_DIR", str(PROJECT_ROOT / "crawler_output")))
 DOCUMENTS_DIR = OUTPUT_DIR / "documents"
 SHARDS_DIR = OUTPUT_DIR / "shards"
 CHECKPOINT_DB_PATH = OUTPUT_DIR / "checkpoint.db"
@@ -23,8 +23,9 @@ CHECKPOINT_DB_PATH = OUTPUT_DIR / "checkpoint.db"
 DASHBOARD_HOST = os.getenv("DASHBOARD_HOST", "0.0.0.0")
 DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "8000"))
 
-# Crawler Concurrency & Network
-DEFAULT_CONCURRENCY = 50
+# Crawler Concurrency & Multi-Processing
+DEFAULT_CONCURRENCY = int(os.getenv("CONCURRENCY", "100"))
+NUM_CPU_WORKERS = int(os.getenv("CPU_WORKERS", str(max(2, min(os.cpu_count() or 4, 32)))))
 REQUEST_TIMEOUT = 18.0
 MAX_RETRIES = 2
 RETRY_BACKOFF_FACTOR = 1.5
