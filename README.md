@@ -1,110 +1,76 @@
-# ViBioMIR Production Crawler & Monitoring Studio
+# ViBioMIR Crawler & Dashboard
 
-Hệ thống crawl, trích xuất dữ liệu bài viết y tế quy mô lớn (~4.39 triệu URLs) và Web Dashboard điều phối, giám sát toàn diện cho Corpus ViBioMIR.
-
----
-
-## 1. Cấu Trúc Thư Mục Hệ Thống
-
-```text
-vibio_crawler/
-├── __init__.py               # Khởi tạo package
-├── config.py                 # Toàn bộ cấu hình hệ thống (concurrency, timeout, paths, dashboard)
-├── domains.py                # Danh mục 97 domain phân theo 3 nhóm (Group 1, 2, 3) & Corpus Metadata
-├── models.py                 # Data models chuẩn (CrawlTask, CrawlResult, DocumentRecord)
-├── data/                     # Thư mục chứa dữ liệu đầu vào gốc
-│   ├── links_corpus.json     # 4.39M links corpus định dạng JSON
-│   └── query.json            # 1,200 câu truy vấn y tế tiếng Việt JSON
-├── fetcher/                  # [TẦNG 1: MẠNG & KẾT NỐI]
-│   ├── __init__.py
-│   ├── client.py             # AsyncFetcher: curl_cffi giả lập Chrome 120, cơ chế retry, backoff
-│   └── handlers.py           # DomainHandlerRegistry: xử lý cookie D1N (Lao Động), headers riêng
-├── extractor/                # [TẦNG 2: TRÍCH XUẤT & BẢO TOÀN HEADING]
-│   ├── __init__.py
-│   ├── hybrid_cleaner.py     # HybridCleaner: Readability bọc <article> + Trafilatura giữ nguyên H2/H3
-│   └── rules_120ask.py       # Bộ trích xuất chuyên sâu cho diễn đàn bác sĩ 120ask.com
-├── storage/                  # [TẦNG 3: LƯU TRỮ PHÂN ĐOẠN & CHECKPOINT]
-│   ├── __init__.py
-│   ├── document_store.py     # DocumentStore: Lưu từng bài vào folder documents/{doc_id}/ (content.md + metadata.json)
-│   ├── checkpoint.py         # CheckpointTracker: SQLite WAL mode + RAM cache O(1) chống trùng lặp & quản lý URL lỗi
-│   └── sharded_writer.py     # ShardedWriter: Ghi nối tiếp các file JSONL phân đoạn (50k docs/shard)
-├── pipeline.py               # [TẦNG 4: ĐIỀU PHỐI ĐA NHIỆM]
-│   └── (Producer Parquet Stream -> Queue -> Workers -> DocumentStore -> Checkpoint)
-├── dashboard/                # [GIAO DIỆN WEB MONITORING & STUDIO]
-│   ├── __init__.py
-│   ├── app.py                # FastAPI Application (REST API & WebSocket Telemetry)
-│   ├── manager.py            # Singleton CrawlerManager điều phối trạng thái (Start/Pause/Resume/Stop)
-│   ├── server.py             # Uvicorn launcher
-│   └── static/
-│       └── index.html        # Modern Single-Page Dashboard (TailwindCSS, Chart.js, Marked.js)
-├── main.py                   # Giao diện dòng lệnh CLI điều khiển chính
-└── README.md                 # Tài liệu kỹ thuật
-```
+Hệ thống crawl bài viết y tế hiệu năng cao kèm Web Dashboard điều phối trực quan.
 
 ---
 
-## 2. Cấu Trúc Dữ Liệu Đầu Ra (Document Store)
+## 1. Cài Đặt Thư Viện (Installation)
 
-Toàn bộ tài liệu crawl thành công được lưu vào thư mục chung `crawler_output/documents/`, bên trong là thư mục con mang tên chính là **`doc_id`**:
-
-```text
-crawler_output/
-├── documents/
-│   ├── 714/
-│   │   ├── content.md         # Toàn bộ nội dung bài viết dạng Markdown sạch (giữ trọn H1, H2, H3, không rác)
-│   │   └── metadata.json      # Metadata: ID, URL gốc, Domain, Title, Char count, Timestamp, Status
-│   ├── 715/
-│   │   ├── content.md
-│   │   └── metadata.json
-│   └── ...
-└── checkpoint.db              # SQLite quản lý index giúp Web Dashboard tìm kiếm O(1) tức thì
-```
-
----
-
-## 3. Khởi Chạy Web Monitoring Dashboard
-
-Khởi chạy máy chủ giao diện web trực quan:
+### 🪟 Windows
 ```powershell
+pip install fastapi "uvicorn[standard]" curl_cffi trafilatura beautifulsoup4 lxml pyarrow websockets pydantic
+```
+
+### 🐧 Linux (Ubuntu / Debian)
+```bash
+# Cài đặt công cụ nền tảng (nếu chưa có)
+sudo apt update && sudo apt install -y python3-pip python3-venv
+
+# Cài đặt packages Python
+pip install fastapi "uvicorn[standard]" curl_cffi trafilatura beautifulsoup4 lxml pyarrow websockets pydantic
+```
+
+---
+
+## 2. Lệnh Chạy Dashboard
+
+Chạy lệnh sau tại thư mục gốc của dự án:
+
+```bash
 python -m vibio_crawler.main --mode dashboard --port 8000
 ```
-Truy cập vào trình duyệt tại: **`http://localhost:8000`**
 
-### Các Tab Chức Năng Trên Giao Diện:
-1. **Tổng Quan & Điều Phối (Overview & Control)**:
-   - Chọn Nhóm Domain cần cào: `Nhóm 1` (86 domain ổn định), `Nhóm 2` (Long Châu, Wujue), hoặc cào mẫu với giới hạn `limit`.
-   - Điều chỉnh thanh trượt Concurrency song song (10 - 100 workers).
-   - Nút điều khiển trạng thái: `[ Bắt đầu Crawl ]`, `[ Tạm dừng (Pause) ]`, `[ Tiếp tục (Resume) ]`, `[ Dừng hẳn (Stop) ]`.
-   - KPI thời gian thực: Tốc độ (doc/s & URLs/phút), Tổng đã cào, Tỷ lệ thành công, Tổng ký tự text sạch.
-   - Biểu đồ thời gian thực (Speed Chart) và thanh tiến trình tổng.
-2. **Quản Lý 97 Domain (Domain Groups)**:
-   - Danh sách chi tiết 97 domain phân nhóm rõ ràng.
-   - Tìm kiếm, lọc theo nhóm, xem % tiến độ, ký tự trung bình.
-   - Nút hành động nhanh: **"Crawl riêng domain này"**.
-3. **URL Thất Bại & Retry (Failed URLs Hub)**:
-   - Bảng liệt kê toàn bộ URL lỗi: Doc ID, Domain, Link URL gốc, Lý do lỗi kỹ thuật chi tiết (`HTTP 403`, `Timeout > 18s`, `Nội dung quá ngắn < 60 ký tự`,...).
-   - Cơ chế Retry: Thử cào lại từng URL hoặc bấm **"Cào lại toàn bộ URL lỗi"**.
-4. **Thẩm Định & Đối Soát (Side-by-Side Inspector)**:
-   - Cột trái: Render nội dung Markdown trực tiếp với cấu trúc H1, H2, H3, in đậm, danh sách.
-   - Cột phải: Link URL gốc, thông tin metadata và nút **"Mở URL gốc trên tab mới"** để đối soát trực tiếp.
+Sau khi chạy, mở trình duyệt truy cập:
+👉 **`http://localhost:8000`**
 
 ---
 
-## 4. Chạy Qua Dòng Lệnh CLI (Headless Mode)
+## 3. Hướng Dẫn Set Path File JSON Custom
 
-Ngoài giao diện Web, hệ thống hỗ trợ chạy hoàn toàn bằng CLI cho máy chủ server / terminal:
+Hệ thống hỗ trợ 2 cách thiết lập file JSON tùy chỉnh:
 
-* **Chạy cào toàn bộ Nhóm 1**:
-  ```powershell
-  python -m vibio_crawler.main --mode run --concurrency 50
-  ```
+### Cách 1: Thiết lập trên Web Dashboard (Đơn giản nhất)
+1. Mở giao diện tại **`http://localhost:8000`**, chọn tab **Crawl theo File JSON**.
+2. Nhập đường dẫn tuyệt đối đến file JSON của bạn vào ô input:
+   - **Windows:** `C:\Users\username\Desktop\rmu.json`
+   - **Linux:** `/home/username/data/rmu.json`
+3. Nhấn **"Phân Tích & Thiết Lập"**.
+   - Hệ thống sẽ tự động tối ưu Round-Robin và lưu cấu hình (chỉ làm 1 lần duy nhất, các lần sau tự động nhận diện).
+   - Sau khi thiết lập xong, nhấn **"Bắt đầu cào File này"**.
+   - Nếu muốn đổi file khác, chỉ cần nhấn nút **"Đổi file JSON khác"**.
 
-* **Chạy mẫu thử nghiệm (Ví dụ 500 URLs)**:
-  ```powershell
-  python -m vibio_crawler.main --mode sample --limit 500 --concurrency 30
-  ```
+### Cách 2: Chạy trực tiếp qua dòng lệnh (CLI)
+Nếu không dùng giao diện web, bạn có thể chạy thẳng bằng terminal:
 
-* **Xem thống kê tiến độ nhanh**:
-  ```powershell
-  python -m vibio_crawler.main --mode stats
-  ```
+```bash
+# Windows / Linux:
+python -m vibio_crawler.main --mode run --source json --json-path "/duong/dan/den/file.json" --concurrency 50
+```
+
+---
+
+### 📝 Định dạng chuẩn của File JSON
+File JSON đầu vào cần có cấu trúc danh sách bài viết như sau:
+
+```json
+{
+  "articles": [
+    {
+      "id": 1,
+      "url": "https://vinmec.com/vi/tin-tuc/bai-viet-mau",
+      "url_host": "vinmec.com"
+    }
+  ]
+}
+```
+*(Hệ thống cũng hỗ trợ định dạng mảng trực tiếp `[{"url": "...", "url_host": "..."}]` hoặc `{"urls": [...]}`)*
