@@ -1,2 +1,58 @@
-﻿
-data/links_corpus.json
+# ===================================================
+# vibio_crawler - Git Ignore Configuration
+# Optimized for GitHub repository push
+# ===================================================
+
+# --- Python & Bytecode ---
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# --- Virtual Environments ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- Large Datasets & Raw Files (Exceeds GitHub Limits) ---
+# rmu.json is ~208MB (exceeds GitHub's 100MB limit)
+rmu.json
+*.jsonl
+*.parquet
+
+# --- Runtime Data, DB & Storage ---
+data/
+crawler_output/
+staging/
+tmp/
+temp/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# --- Logs & Telemetry ---
+*.log
+logs/
+*.pid
+
+# --- Environment & Secrets ---
+.env
+.env.*
+!.env.example
+secrets.json
+credentials.json
+
+# --- IDEs & OS Files ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

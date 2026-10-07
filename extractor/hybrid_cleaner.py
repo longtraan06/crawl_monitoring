@@ -139,3 +139,9 @@ class HybridCleaner:
             cleaned_body = f"# {title}\n\n{cleaned_body}"
 
         return cleaned_body
+
+# Khởi động trước trafilatura & dateparser để tránh deadlock import giữa các worker threads
+try:
+    trafilatura.extract("<html><body><p>Warmup text</p></body></html>")
+except Exception:
+    pass

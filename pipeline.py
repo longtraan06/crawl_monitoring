@@ -12,6 +12,7 @@ import sys
 import time
 import asyncio
 import logging
+import gc
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse
 from typing import Optional, List, Set, Dict, Any
@@ -25,7 +26,11 @@ from .config import (
     MIN_CONTENT_CHARS,
     BUFFER_FLUSH_INTERVAL,
     USE_STAGING_BUFFER,
-    STAGING_BATCH_SIZE
+    STAGING_BATCH_SIZE,
+    RMU_TOTAL_URLS,
+    ensure_rmu_parquet,
+    get_active_dataset_parquet,
+    get_active_total_urls
 )
 from .domains import is_domain_allowed, get_domain_group
 from .models import CrawlTask, CrawlResult
@@ -50,9 +55,11 @@ class CrawlerPipeline:
         limit: Optional[int] = None,
         use_staging: Optional[bool] = None,
         staging_batch_size: Optional[int] = None,
-        include_group_2: bool = False
+        include_group_2: bool = False,
+        source: str = "corpus"
     ):
         self.concurrency = concurrency
+        self.source = source.lower() if source else "corpus"
         if include_group_2 and not target_groups:
             self.target_groups = [1, 2]
         else:
@@ -70,7 +77,7 @@ class CrawlerPipeline:
         
         self.checkpoint = CheckpointTracker()
         self.doc_store = DocumentStore(use_staging=self.use_staging)
-        self.fetcher = AsyncFetcher()
+        self.fetcher = AsyncFetcher(max_clients=max(self.concurrency * 2, 120))
         self.extractor = HybridCleaner()
         
         # ThreadPool đa nhân CPU cho HTML parsing
@@ -88,6 +95,7 @@ class CrawlerPipeline:
         self._total_success = 0
         self._total_failed = 0
         self._total_moved_to_nas = 0
+        self._already_visited_count = 0
         self._start_time = 0.0
 
     def pause(self):
@@ -124,8 +132,18 @@ class CrawlerPipeline:
             remaining = max(0, self.limit - self._total_processed)
             eta_seconds = remaining / avg_speed_sec
 
+        total_source_urls = get_active_total_urls() if self.source in ("rmu", "json") else 3638908
+        overall_done = self._already_visited_count + self._total_processed
+        overall_pct = round((overall_done / total_source_urls * 100), 2) if total_source_urls > 0 else 0.0
+
         return {
             "state": self.state,
+            "source": self.source,
+            "source_total_urls": total_source_urls,
+            "already_crawled_count": self._already_visited_count,
+            "session_processed": self._total_processed,
+            "overall_done_count": overall_done,
+            "overall_progress_percent": overall_pct,
             "elapsed_seconds": round(elapsed, 1),
             "speed_doc_per_sec": round(avg_speed_sec, 2),
             "speed_urls_per_min": round(speed_per_min, 1),
@@ -146,50 +164,102 @@ class CrawlerPipeline:
         }
 
     async def _producer_task(self):
-        """Đọc streaming file parquet, lọc domain/nhóm hợp lệ và đẩy vào hàng đợi tác vụ."""
-        if not CORPUS_PARQUET_PATH.exists():
-            logger.error(f"Không tìm thấy file parquet tại {CORPUS_PARQUET_PATH}")
-            for _ in range(self.concurrency):
-                await self.task_queue.put(None)
-            return
-
-        parquet_file = pq.ParquetFile(str(CORPUS_PARQUET_PATH))
+        """Đọc streaming file parquet (Corpus chuẩn hoặc JSON Dataset), lọc và đẩy vào hàng đợi tác vụ."""
         enqueued_count = 0
 
-        for batch in parquet_file.iter_batches(batch_size=10000, columns=["id", "url"]):
-            if self._stop_requested:
-                break
-                
-            ids = batch["id"].to_pylist()
-            urls = batch["url"].to_pylist()
+        reached_limit = False
 
-            for doc_id, url in zip(ids, urls):
-                if self._stop_requested:
+        if self.source in ("rmu", "json"):
+            file_path = get_active_dataset_parquet()
+            if not file_path.exists():
+                logger.error(f"Không tìm thấy file dataset parquet tại {file_path}")
+                for _ in range(self.concurrency):
+                    await self.task_queue.put(None)
+                return
+
+            parquet_file = pq.ParquetFile(str(file_path))
+
+            for batch in parquet_file.iter_batches(batch_size=10000, columns=["id", "url", "domain"]):
+                if self._stop_requested or reached_limit:
                     break
 
-                try:
-                    domain = urlparse(url).netloc.lower()
-                except Exception:
-                    continue
+                ids = batch["id"].to_pylist()
+                urls = batch["url"].to_pylist()
+                domains = batch["domain"].to_pylist()
 
-                if not is_domain_allowed(domain, self.target_groups, self.target_domains):
-                    continue
+                for doc_id, url, domain in zip(ids, urls, domains):
+                    if self._stop_requested:
+                        break
 
-                if self.checkpoint.is_visited(doc_id):
-                    continue
+                    domain_clean = (domain or urlparse(url).netloc).lower().strip()
 
-                group_id = get_domain_group(domain)
-                task = CrawlTask(id=doc_id, url=url, domain=domain, group_id=group_id)
-                await self.task_queue.put(task)
-                enqueued_count += 1
-                self._total_enqueued = enqueued_count
+                    # Lọc theo domain nếu người dùng chỉ định
+                    if self.target_domains and domain_clean not in self.target_domains:
+                        continue
 
-                if self.limit and enqueued_count >= self.limit:
-                    self._stop_requested = True
+                    # Đếm và bỏ qua nếu đã cào trước đó
+                    if self.checkpoint.is_visited(doc_id):
+                        self._already_visited_count += 1
+                        continue
+
+                    group_id = get_domain_group(domain_clean)
+                    task = CrawlTask(id=doc_id, url=url, domain=domain_clean, group_id=group_id)
+                    await self.task_queue.put(task)
+                    enqueued_count += 1
+                    self._total_enqueued = enqueued_count
+
+                    if self.limit and enqueued_count >= self.limit:
+                        reached_limit = True
+                        break
+
+            for _ in range(self.concurrency):
+                await self.task_queue.put(None)
+
+        else:
+            # Chế độ cào toàn bộ links_corpus.parquet
+            if not CORPUS_PARQUET_PATH.exists():
+                logger.error(f"Không tìm thấy file parquet tại {CORPUS_PARQUET_PATH}")
+                for _ in range(self.concurrency):
+                    await self.task_queue.put(None)
+                return
+
+            parquet_file = pq.ParquetFile(str(CORPUS_PARQUET_PATH))
+
+            for batch in parquet_file.iter_batches(batch_size=10000, columns=["id", "url"]):
+                if self._stop_requested or reached_limit:
                     break
 
-        for _ in range(self.concurrency):
-            await self.task_queue.put(None)
+                ids = batch["id"].to_pylist()
+                urls = batch["url"].to_pylist()
+
+                for doc_id, url in zip(ids, urls):
+                    if self._stop_requested:
+                        break
+
+                    try:
+                        domain = urlparse(url).netloc.lower()
+                    except Exception:
+                        continue
+
+                    if not is_domain_allowed(domain, self.target_groups, self.target_domains):
+                        continue
+
+                    if self.checkpoint.is_visited(doc_id):
+                        self._already_visited_count += 1
+                        continue
+
+                    group_id = get_domain_group(domain)
+                    task = CrawlTask(id=doc_id, url=url, domain=domain, group_id=group_id)
+                    await self.task_queue.put(task)
+                    enqueued_count += 1
+                    self._total_enqueued = enqueued_count
+
+                    if self.limit and enqueued_count >= self.limit:
+                        reached_limit = True
+                        break
+
+            for _ in range(self.concurrency):
+                await self.task_queue.put(None)
 
     async def _worker_task(self, worker_id: int):
         """Worker tiêu thụ tác vụ: Fetch mạng -> CPU Parse -> Đẩy vào Write Queue."""
@@ -382,6 +452,10 @@ class CrawlerPipeline:
                     self.checkpoint.record_batch(batch_results)
                     batch_results.clear()
                     last_flush_time = now
+
+                    # Thu dọn rác RAM định kỳ sau mỗi 3000 URL để giải phóng string/lxml C-pointers
+                    if self._total_processed % 3000 < 500:
+                        gc.collect()
 
             except asyncio.CancelledError:
                 break

@@ -79,6 +79,10 @@
     <button onclick="switchTab('tab-overview')" id="nav-tab-overview" class="tab-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2 bg-indigo-600 text-white transition">
       <i class="fa-solid fa-chart-pie"></i> Tổng Quan & Điều Phối
     </button>
+    <button onclick="switchTab('tab-rmu')" id="nav-tab-rmu" class="tab-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">
+      <i class="fa-solid fa-file-code text-indigo-400"></i> Crawl theo File JSON
+      <span id="badgeRmuPct" class="text-xs px-1.5 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">0%</span>
+    </button>
     <button onclick="switchTab('tab-domains')" id="nav-tab-domains" class="tab-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">
       <i class="fa-solid fa-globe"></i> 97 Nhóm Domain
     </button>
@@ -114,6 +118,82 @@
           </div>
         </div>
 
+        <!-- CRAWL SOURCE SELECTION BANNER -->
+        <div class="mb-4 bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <label class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <i class="fa-solid fa-database text-indigo-400"></i> Chọn Nguồn Dữ Liệu Crawl (Dataset Source)
+            </label>
+            <p class="text-[11px] text-slate-400">Chuyển đổi giữa cào toàn bộ kho Corpus (3.64M URLs) hoặc cào riêng danh sách URL từ file JSON tùy chỉnh.</p>
+          </div>
+          <div class="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button id="btnSrcCorpus" onclick="handleSourceChange('corpus')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white flex items-center gap-2 transition">
+              <i class="fa-solid fa-cubes"></i> Toàn bộ Corpus <span class="text-indigo-200 text-[10px] font-mono">(3.64M URLs)</span>
+            </button>
+            <button id="btnSrcRmu" onclick="handleSourceChange('rmu')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white flex items-center gap-2 transition">
+              <i class="fa-solid fa-file-code text-amber-400"></i> Crawl theo File JSON <span id="labelSrcJsonCount" class="text-amber-400 text-[10px] font-mono font-bold">(Đang tải...)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- DEDICATED RMU/JSON PROGRESS BANNER (Hiển thị khi chọn mode JSON) -->
+        <div id="rmuProgressBanner" class="hidden mb-4 bg-gradient-to-r from-indigo-950/60 to-slate-900 border border-indigo-500/40 rounded-xl p-4 shadow-inner">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse"></span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-filter text-amber-400"></i> Chế độ Crawl theo File JSON (<span id="bannerJsonFileName" class="text-amber-300">rmu.json</span>)
+              </h3>
+            </div>
+            <button onclick="toggleRmuHostsTable()" class="text-[11px] text-indigo-300 hover:text-white underline flex items-center gap-1 font-medium">
+              <i class="fa-solid fa-table-list"></i> <span id="rmuToggleText">Xem bảng chi tiết các host &darr;</span>
+            </button>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+            <div class="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+              <div class="text-[11px] text-slate-400">Tổng URLs RMU</div>
+              <div class="text-sm font-bold font-mono text-white" id="rmuTotalUrls">1,464,927</div>
+            </div>
+            <div class="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+              <div class="text-[11px] text-slate-400">Đã cào trước đó</div>
+              <div class="text-sm font-bold font-mono text-emerald-400" id="rmuAlreadyCrawled">0 (0.0%)</div>
+            </div>
+            <div class="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+              <div class="text-[11px] text-slate-400">Cào phiên này</div>
+              <div class="text-sm font-bold font-mono text-indigo-300" id="rmuSessionProcessed">0</div>
+            </div>
+            <div class="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+              <div class="text-[11px] text-slate-400">Còn lại cần cào</div>
+              <div class="text-sm font-bold font-mono text-amber-400" id="rmuRemainingUrls">1,464,927</div>
+            </div>
+            <div class="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+              <div class="text-[11px] text-slate-400">Tổng hoàn thành</div>
+              <div class="text-sm font-bold font-mono text-cyan-400" id="rmuOverallPercent">0.0%</div>
+            </div>
+          </div>
+
+          <!-- Collapsible 29 RMU Hosts Table -->
+          <div id="rmuHostsContainer" class="hidden mt-3 max-h-64 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/90">
+            <table class="w-full text-left text-[11px] text-slate-300">
+              <thead class="sticky top-0 bg-slate-900 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+                <tr>
+                  <th class="py-2 px-3">Domain / Host</th>
+                  <th class="py-2 px-3 text-right">Tổng URLs</th>
+                  <th class="py-2 px-3 text-right">Đã cào</th>
+                  <th class="py-2 px-3 text-right">Thành công</th>
+                  <th class="py-2 px-3 text-right">Lỗi</th>
+                  <th class="py-2 px-3 text-right">Còn lại</th>
+                  <th class="py-2 px-3 text-right">Tiến độ</th>
+                  <th class="py-2 px-3 text-center">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="rmuHostsTableBody" class="divide-y divide-slate-800/60 font-mono">
+                <!-- Dynamic rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
           
           <!-- Nhóm Domain Selector -->
@@ -139,10 +219,10 @@
           <div class="space-y-2">
             <div class="flex justify-between items-center text-xs">
               <label class="font-semibold uppercase tracking-wider text-slate-400">Độ song song</label>
-              <span id="concurrencyVal" class="text-indigo-400 font-bold font-mono">100 workers</span>
+              <span id="concurrencyVal" class="text-indigo-400 font-bold font-mono">120 workers</span>
             </div>
-            <input type="range" id="inputConcurrency" min="10" max="300" step="10" value="100" oninput="document.getElementById('concurrencyVal').innerText = this.value + ' workers'" class="w-full accent-indigo-500 cursor-pointer bg-slate-700 h-2 rounded-lg">
-            <p class="text-[11px] text-slate-500">Kéo lên 150 - 250 workers nếu server nhiều CPU/RAM.</p>
+            <input type="range" id="inputConcurrency" min="10" max="300" step="10" value="120" oninput="document.getElementById('concurrencyVal').innerText = this.value + ' workers'" class="w-full accent-indigo-500 cursor-pointer bg-slate-700 h-2 rounded-lg">
+            <p class="text-[11px] text-slate-500">Mặc định tối ưu 120 workers cho máy local (Đạt 70-120 doc/s).</p>
           </div>
 
           <!-- Limit setting -->
@@ -271,6 +351,238 @@
         <div class="h-56 w-full">
           <canvas id="speedChart"></canvas>
         </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB: RMU DATASET (JSON DATASET) ==================== -->
+    <div id="tab-rmu" class="hidden space-y-6">
+      
+      <!-- DATASET CONFIGURATION CARD -->
+      <div id="jsonDatasetCard" class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+        <!-- Glow highlight -->
+        <div class="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <!-- STATE A: SETUP VIEW (Hiển thị khi CHƯA thiết lập hoặc bấm Đổi file) -->
+        <div id="jsonSetupView" class="space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 pb-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  <i class="fa-solid fa-gear mr-1"></i> Thiết Lập Một Lần (One-Time Setup)
+                </span>
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-file-code text-indigo-400"></i> Cấu Hình File JSON Cần Crawl
+                </h2>
+              </div>
+              <p class="text-xs text-slate-400">
+                Nhập đường dẫn tuyệt đối đến file JSON trên máy local. Hệ thống sẽ tự động phân tích cấu trúc, trích xuất danh sách domain, biên dịch sang định dạng Parquet streaming và sắp xếp Round-Robin tối ưu tốc độ crawl.
+              </p>
+            </div>
+            <div id="jsonCancelChangeBtnWrapper" class="hidden">
+              <button onclick="cancelJsonChange()" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 transition">
+                <i class="fa-solid fa-xmark mr-1"></i> Giữ file hiện tại
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            <div class="md:col-span-9 space-y-1.5">
+              <label for="inputJsonFilePath" class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                <span><i class="fa-solid fa-folder-open text-indigo-400 mr-1.5"></i>Đường dẫn tuyệt đối đến file JSON (.json):</span>
+                <span class="text-[11px] text-slate-500 font-normal">Format: <code class="text-indigo-300">{"articles": [{"id", "url", "url_host"}]}</code></span>
+              </label>
+              <div class="relative">
+                <input 
+                  type="text" 
+                  id="inputJsonFilePath" 
+                  placeholder="C:\Users\Rmie\Desktop\Workspace\R2AI\ViBioMIR\vibio_crawler\rmu.json" 
+                  value="C:\Users\Rmie\Desktop\Workspace\R2AI\ViBioMIR\vibio_crawler\rmu.json"
+                  class="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs font-mono text-white placeholder-slate-500 focus:outline-none transition shadow-inner"
+                />
+              </div>
+            </div>
+            <div class="md:col-span-3">
+              <button 
+                id="btnSetupJsonSubmit" 
+                onclick="submitJsonDatasetSetup()" 
+                class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition cursor-pointer"
+              >
+                <i class="fa-solid fa-bolt" id="btnSetupJsonIcon"></i> 
+                <span id="btnSetupJsonText">Phân Tích & Thiết Lập</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="jsonSetupAlert" class="hidden text-xs p-3 rounded-xl border"></div>
+        </div>
+
+        <!-- STATE B: ACTIVE DATASET INFO VIEW (Hiển thị khi ĐÃ thiết lập xong) -->
+        <div id="jsonActiveView" class="hidden space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 pb-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Đã Thiết Lập & Sẵn Sàng
+                </span>
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-file-circle-check text-emerald-400"></i> <span id="activeJsonFileName">rmu.json</span>
+                </h2>
+              </div>
+              <div class="text-xs text-slate-400 flex items-center gap-2 font-mono">
+                <i class="fa-solid fa-location-dot text-slate-500"></i>
+                <span id="activeJsonPath" class="truncate max-w-xl text-slate-300">C:\Users\Rmie\...</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button 
+                onclick="startJsonCrawlModal()" 
+                class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition cursor-pointer"
+              >
+                <i class="fa-solid fa-play"></i> Bắt đầu cào File này
+              </button>
+              <button 
+                onclick="promptChangeJsonFile()" 
+                class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-slate-200 flex items-center gap-1.5 transition cursor-pointer"
+                title="Thay đổi sang file JSON khác (sẽ yêu cầu thiết lập lại)"
+              >
+                <i class="fa-solid fa-file-import text-amber-400"></i> Đổi file JSON khác
+              </button>
+              <button 
+                onclick="loadRmuData()" 
+                class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <i class="fa-solid fa-arrows-rotate"></i> Làm mới
+              </button>
+            </div>
+          </div>
+
+          <!-- Dataset Summary Pill Row -->
+          <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-layer-group text-indigo-400"></i>
+              <span>Tổng URLs: <strong class="text-white font-mono" id="activeJsonTotalUrls">1,464,927</strong></span>
+            </div>
+            <div class="h-3 w-px bg-slate-700"></div>
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-network-wired text-cyan-400"></i>
+              <span>Số Hosts/Domain: <strong class="text-white font-mono" id="activeJsonHostCount">29 hosts</strong></span>
+            </div>
+            <div class="h-3 w-px bg-slate-700"></div>
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-bolt text-amber-400"></i>
+              <span>Định dạng stream: <span class="text-indigo-300 font-mono">Parquet Round-Robin (Tối ưu I/O)</span></span>
+            </div>
+            <div class="h-3 w-px bg-slate-700"></div>
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-clock-rotate-left text-purple-400"></i>
+              <span>Thiết lập lúc: <span class="text-slate-300 font-mono" id="activeJsonCreatedAt">-</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOCKED NOTICE BANNER (Hiển thị khi ở trạng thái Locked) -->
+      <div id="jsonLockedBanner" class="bg-amber-950/40 border border-amber-500/40 rounded-2xl p-4 flex items-center gap-3.5 shadow-sm">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30 text-lg">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-amber-300">Tính Năng Đang Tạm Khóa — Cần Thiết Lập File JSON</h3>
+          <p class="text-xs text-amber-400/80 mt-0.5">
+            Vui lòng nhập đường dẫn file JSON và nhấn <strong>"Phân Tích & Thiết Lập"</strong> ở phía trên. Sau khi hệ thống xử lý xong (chỉ 1 lần duy nhất), toàn bộ bảng tiến độ, danh sách domain và bảng điều khiển cào sẽ được tự động mở khóa.
+          </p>
+        </div>
+      </div>
+
+      <!-- DASHBOARD CONTROLS & MONITORING CONTAINER (Sẽ bị LOCK nếu chưa thiết lập) -->
+      <div id="jsonDashboardControlsContainer" class="space-y-6 transition-all duration-300">
+        
+        <!-- RMU KPI Cards & Overall Progress -->
+        <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-simple text-indigo-400"></i> Thống Kê Tiến Độ File JSON Hiện Tại
+              </h3>
+              <p class="text-xs text-slate-400">Checkpoint tự động kiểm tra và bỏ qua URL đã cào trước đó.</p>
+            </div>
+          </div>
+
+          <!-- RMU KPI Cards -->
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-800">
+              <div class="text-xs text-slate-400">Tổng số URLs</div>
+              <div class="text-lg font-bold font-mono text-white mt-1" id="rmuTabTotal">0</div>
+              <div class="text-[11px] text-slate-500" id="rmuTabHostCount">0 hosts</div>
+            </div>
+            <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-800">
+              <div class="text-xs text-slate-400">Đã cào trước đó</div>
+              <div class="text-lg font-bold font-mono text-emerald-400 mt-1" id="rmuTabCrawled">0</div>
+              <div class="text-[11px] text-emerald-500/80" id="rmuTabCrawledPct">0.0% hoàn thành</div>
+            </div>
+            <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-800">
+              <div class="text-xs text-slate-400">Thành công (Valid)</div>
+              <div class="text-lg font-bold font-mono text-indigo-300 mt-1" id="rmuTabSuccess">0</div>
+              <div class="text-[11px] text-indigo-400/80" id="rmuTabSuccessChars">0 MB text sạch</div>
+            </div>
+            <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-800">
+              <div class="text-xs text-slate-400">Thất bại / Lỗi</div>
+              <div class="text-lg font-bold font-mono text-rose-400 mt-1" id="rmuTabFailed">0</div>
+              <div class="text-[11px] text-slate-500">Sẵn sàng retry</div>
+            </div>
+            <div class="bg-slate-900/70 p-3.5 rounded-xl border border-slate-800">
+              <div class="text-xs text-slate-400">Còn lại cần cào</div>
+              <div class="text-lg font-bold font-mono text-amber-400 mt-1" id="rmuTabRemaining">0</div>
+              <div class="text-[11px] text-amber-500/80">Chờ nạp hàng đợi</div>
+            </div>
+          </div>
+
+          <!-- RMU Progress Bar -->
+          <div class="mt-4">
+            <div class="flex justify-between items-center text-xs mb-1.5">
+              <span class="text-slate-300 font-medium">Tiến độ cào tổng thể File JSON</span>
+              <span class="font-mono text-indigo-300" id="rmuTabProgressText">0 / 0 URLs (0.0%)</span>
+            </div>
+            <div class="w-full bg-slate-900 rounded-full h-3 overflow-hidden p-0.5 border border-slate-800">
+              <div id="rmuTabProgressBar" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RMU Hosts Table -->
+        <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl overflow-hidden shadow-sm">
+          <div class="p-4 border-b border-slate-700 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <input type="text" id="rmuHostSearchInput" oninput="filterRmuTable()" placeholder="Lọc host (ví dụ: suckhoedoisong, vinmec, medlatec)..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 w-72 focus:outline-none focus:border-indigo-500">
+            </div>
+            <div class="text-xs text-slate-400">
+              Hiển thị: <span id="displayedRmuHostsCount" class="font-bold text-white">0</span> / <span id="totalRmuHostsCount" class="font-bold text-slate-300">0</span> Hosts trong file JSON
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-900/80 text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-700">
+                <tr>
+                  <th class="py-3 px-4">STT</th>
+                  <th class="py-3 px-4">Domain / Host</th>
+                  <th class="py-3 px-4 text-right">Tổng URLs</th>
+                  <th class="py-3 px-4 text-right">Đã cào</th>
+                  <th class="py-3 px-4 text-right">Thành công</th>
+                  <th class="py-3 px-4 text-right">Thất bại</th>
+                  <th class="py-3 px-4 text-right">Còn lại</th>
+                  <th class="py-3 px-4" style="width: 220px;">Tiến độ</th>
+                  <th class="py-3 px-4 text-center">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="rmuTabTableBody" class="divide-y divide-slate-800 font-mono">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
     </div>
@@ -470,6 +782,8 @@
     let currentFailedPage = 1;
     let currentDocPage = 1;
     let domainsCache = { group_1: [], group_2: [], group_3: [] };
+    let selectedCrawlSource = 'corpus';
+    let rmuDataCache = null;
 
     // Initialize Chart
     function initChart() {
@@ -515,12 +829,14 @@
       document.getElementById('nav-' + tabId).classList.remove('text-slate-400');
 
       document.getElementById('tab-overview').classList.add('hidden');
+      document.getElementById('tab-rmu').classList.add('hidden');
       document.getElementById('tab-domains').classList.add('hidden');
       document.getElementById('tab-failed').classList.add('hidden');
       document.getElementById('tab-inspector').classList.add('hidden');
 
       document.getElementById(tabId).classList.remove('hidden');
 
+      if (tabId === 'tab-rmu') checkJsonDatasetStatus();
       if (tabId === 'tab-domains') loadDomainsData();
       if (tabId === 'tab-failed') loadFailedUrls(1);
       if (tabId === 'tab-inspector') loadDocuments(1);
@@ -594,12 +910,27 @@
         stagingToggleStatus.className = isStagingOn ? 'text-emerald-400 font-bold font-mono text-[11px]' : 'text-slate-400 font-bold font-mono text-[11px]';
       }
 
-      // Progress
-      const visited = corp.total_visited || pipe.total_processed || 0;
-      const targetTotal = 3638908;
-      const pct = Math.min(100, (visited / targetTotal * 100)).toFixed(2);
-      document.getElementById('progressSummaryText').innerText = visited.toLocaleString() + ' / ' + targetTotal.toLocaleString() + ' URLs (' + pct + '%)';
-      document.getElementById('progressBarFill').style.width = pct + '%';
+      // Update RMU Stats
+      if (data.rmu) {
+        updateRmuUI(data.rmu, pipe);
+      }
+
+      // Progress Calculation
+      const isJsonSource = (pipe.source === 'json') || (pipe.source === 'rmu') || (selectedCrawlSource === 'rmu') || (selectedCrawlSource === 'json');
+      if (isJsonSource) {
+        const targetTotal = (data.rmu && data.rmu.total_urls) || (rmuDataCache && rmuDataCache.total_urls) || 1464927;
+        const visited = pipe.overall_done_count !== undefined ? pipe.overall_done_count : (data.rmu ? data.rmu.already_crawled : 0);
+        const pct = pipe.overall_progress_percent !== undefined ? pipe.overall_progress_percent : (targetTotal > 0 ? ((visited / targetTotal) * 100).toFixed(2) : 0);
+        const fileName = (data.rmu && data.rmu.file_name) || (rmuDataCache && rmuDataCache.file_name) || 'File JSON';
+        document.getElementById('progressSummaryText').innerHTML = `<span class="text-amber-400 font-bold font-mono">[${fileName}]</span> ${visited.toLocaleString()} / ${targetTotal.toLocaleString()} URLs (${pct}%)`;
+        document.getElementById('progressBarFill').style.width = pct + '%';
+      } else {
+        const visited = corp.total_visited || pipe.total_processed || 0;
+        const targetTotal = 3638908;
+        const pct = Math.min(100, (visited / targetTotal * 100)).toFixed(2);
+        document.getElementById('progressSummaryText').innerText = visited.toLocaleString() + ' / ' + targetTotal.toLocaleString() + ' URLs (' + pct + '%)';
+        document.getElementById('progressBarFill').style.width = pct + '%';
+      }
       document.getElementById('elapsedTimeText').innerText = 'Thời gian phiên: ' + Math.round(pipe.elapsed_seconds || 0) + 's';
 
       if (pipe.eta_seconds) {
@@ -665,28 +996,366 @@
       }
     }
 
+    // Source Selector Handler
+    function handleSourceChange(src) {
+      selectedCrawlSource = src;
+      const btnCorpus = document.getElementById('btnSrcCorpus');
+      const btnRmu = document.getElementById('btnSrcRmu');
+      const rmuBanner = document.getElementById('rmuProgressBanner');
+      const grp1 = document.getElementById('chkGroup1') ? document.getElementById('chkGroup1').closest('label') : null;
+      const grp2 = document.getElementById('chkGroup2') ? document.getElementById('chkGroup2').closest('label') : null;
+
+      if (src === 'rmu') {
+        if (btnRmu) btnRmu.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white flex items-center gap-2 transition shadow-sm';
+        if (btnCorpus) btnCorpus.className = 'px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white flex items-center gap-2 transition';
+        if (rmuBanner) rmuBanner.classList.remove('hidden');
+        if (grp1) grp1.classList.add('opacity-40');
+        if (grp2) grp2.classList.add('opacity-40');
+        loadRmuData();
+      } else {
+        if (btnCorpus) btnCorpus.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white flex items-center gap-2 transition shadow-sm';
+        if (btnRmu) btnRmu.className = 'px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white flex items-center gap-2 transition';
+        if (rmuBanner) rmuBanner.classList.add('hidden');
+        if (grp1) grp1.classList.remove('opacity-40');
+        if (grp2) grp2.classList.remove('opacity-40');
+      }
+    }
+
+    // RMU Host Table Toggle
+    function toggleRmuHostsTable() {
+      const container = document.getElementById('rmuHostsContainer');
+      const toggleText = document.getElementById('rmuToggleText');
+      if (!container) return;
+      if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        if (toggleText) toggleText.innerHTML = 'Thu gọn bảng 29 host RMU &uarr;';
+        if (!rmuDataCache) loadRmuData();
+      } else {
+        container.classList.add('hidden');
+        if (toggleText) toggleText.innerHTML = 'Xem bảng chi tiết 29 host RMU &darr;';
+      }
+    }
+
+    // --- JSON DATASET SETUP & LOCK MANAGEMENT ---
+    function applyJsonDatasetLockState(isConfigured, config = null) {
+      const setupView = document.getElementById('jsonSetupView');
+      const activeView = document.getElementById('jsonActiveView');
+      const lockedBanner = document.getElementById('jsonLockedBanner');
+      const controlsContainer = document.getElementById('jsonDashboardControlsContainer');
+
+      if (isConfigured) {
+        if (setupView) setupView.classList.add('hidden');
+        if (activeView) activeView.classList.remove('hidden');
+        if (lockedBanner) lockedBanner.classList.add('hidden');
+        if (controlsContainer) {
+          controlsContainer.className = 'space-y-6 opacity-100 pointer-events-auto filter-none transition-all duration-300';
+        }
+        if (config) {
+          const fn = document.getElementById('activeJsonFileName');
+          if (fn) fn.innerText = config.file_name || 'custom_dataset.json';
+          const fp = document.getElementById('activeJsonPath');
+          if (fp) fp.innerText = config.json_path || '';
+          const tu = document.getElementById('activeJsonTotalUrls');
+          if (tu) tu.innerText = (config.total_urls || 0).toLocaleString();
+          const hc = document.getElementById('activeJsonHostCount');
+          if (hc) hc.innerText = (config.host_count || 0) + ' hosts';
+          const ca = document.getElementById('activeJsonCreatedAt');
+          if (ca) ca.innerText = config.created_at ? config.created_at.replace('T', ' ').substring(0, 19) : '-';
+
+          const bFn = document.getElementById('bannerJsonFileName');
+          if (bFn) bFn.innerText = config.file_name || 'custom_dataset.json';
+          const lblCount = document.getElementById('labelSrcJsonCount');
+          if (lblCount) lblCount.innerText = '(' + (config.total_urls || 0).toLocaleString() + ' URLs)';
+        }
+      } else {
+        if (setupView) setupView.classList.remove('hidden');
+        if (activeView) activeView.classList.add('hidden');
+        if (lockedBanner) lockedBanner.classList.remove('hidden');
+        if (controlsContainer) {
+          controlsContainer.className = 'space-y-6 opacity-30 pointer-events-none select-none filter blur-[1px] transition-all duration-300';
+        }
+        const lblCount = document.getElementById('labelSrcJsonCount');
+        if (lblCount) lblCount.innerText = '(Chưa thiết lập)';
+      }
+    }
+
+    async function checkJsonDatasetStatus() {
+      try {
+        const res = await fetch('/api/dataset/json/status');
+        const data = await res.json();
+        applyJsonDatasetLockState(data.is_configured, data.config);
+        if (data.stats) {
+          rmuDataCache = data.stats;
+          updateRmuUI(data.stats);
+          renderRmuHostsTables(data.stats.hosts || []);
+        }
+        return data;
+      } catch (err) {
+        console.error('Lỗi kiểm tra JSON dataset status:', err);
+        return null;
+      }
+    }
+
+    async function submitJsonDatasetSetup() {
+      const input = document.getElementById('inputJsonFilePath');
+      const alertBox = document.getElementById('jsonSetupAlert');
+      const btn = document.getElementById('btnSetupJsonSubmit');
+      const btnIcon = document.getElementById('btnSetupJsonIcon');
+      const btnText = document.getElementById('btnSetupJsonText');
+
+      const jsonPath = input ? input.value.trim() : '';
+      if (!jsonPath) {
+        if (alertBox) {
+          alertBox.className = 'text-xs p-3 rounded-xl border bg-rose-950/60 border-rose-500/50 text-rose-300 flex items-center gap-2';
+          alertBox.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-400"></i> Vui lòng nhập đường dẫn file JSON!';
+          alertBox.classList.remove('hidden');
+        }
+        return;
+      }
+
+      btn.disabled = true;
+      btn.classList.add('opacity-75', 'cursor-not-allowed');
+      btnIcon.className = 'fa-solid fa-spinner fa-spin';
+      btnText.innerText = 'Đang phân tích & tối ưu...';
+
+      if (alertBox) {
+        alertBox.className = 'text-xs p-3 rounded-xl border bg-indigo-950/60 border-indigo-500/50 text-indigo-300 flex items-center gap-2';
+        alertBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i> Đang đọc file JSON, trích xuất cấu trúc và biên dịch Round-Robin Parquet stream... Quá trình này chỉ diễn ra 1 lần duy nhất.';
+        alertBox.classList.remove('hidden');
+      }
+
+      try {
+        const res = await fetch('/api/dataset/json/setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ json_path: jsonPath })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          if (alertBox) {
+            alertBox.className = 'text-xs p-3 rounded-xl border bg-emerald-950/60 border-emerald-500/50 text-emerald-300 flex items-center gap-2';
+            alertBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${data.message}`;
+          }
+          setTimeout(() => {
+            applyJsonDatasetLockState(true, data.config);
+            if (data.stats) {
+              rmuDataCache = data.stats;
+              updateRmuUI(data.stats);
+              renderRmuHostsTables(data.stats.hosts || []);
+            }
+            if (alertBox) alertBox.classList.add('hidden');
+          }, 800);
+        } else {
+          if (alertBox) {
+            alertBox.className = 'text-xs p-3 rounded-xl border bg-rose-950/60 border-rose-500/50 text-rose-300 flex items-center gap-2';
+            alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400"></i> Lỗi thiết lập: ${data.message}`;
+          }
+        }
+      } catch (err) {
+        if (alertBox) {
+          alertBox.className = 'text-xs p-3 rounded-xl border bg-rose-950/60 border-rose-500/50 text-rose-300 flex items-center gap-2';
+          alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400"></i> Lỗi kết nối máy chủ: ${err.message}`;
+        }
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        btnIcon.className = 'fa-solid fa-bolt';
+        btnText.innerText = 'Phân Tích & Thiết Lập';
+      }
+    }
+
+    async function promptChangeJsonFile() {
+      if (confirm('Bạn có chắc chắn muốn đổi sang file JSON khác?\nBảng điều khiển và thống kê sẽ tạm khóa cho đến khi thiết lập file mới hoàn tất.')) {
+        try {
+          const res = await fetch('/api/dataset/json/reset', { method: 'POST' });
+          const data = await res.json();
+          applyJsonDatasetLockState(false);
+          const input = document.getElementById('inputJsonFilePath');
+          if (input) {
+            input.focus();
+            input.select();
+          }
+        } catch (err) {
+          console.error('Lỗi reset dataset:', err);
+        }
+      }
+    }
+
+    function cancelJsonChange() {
+      checkJsonDatasetStatus();
+    }
+
+    // RMU / JSON Data Fetcher & UI Updaters
+    async function loadRmuData() {
+      try {
+        const res = await fetch('/api/crawler/rmu/stats');
+        rmuDataCache = await res.json();
+        updateRmuUI(rmuDataCache);
+        renderRmuHostsTables(rmuDataCache.hosts || []);
+      } catch (e) {
+        console.error('Lỗi tải dữ liệu RMU:', e);
+      }
+    }
+
+    function updateRmuUI(rmu, pipe = null) {
+      if (!rmu) return;
+      const total = rmu.total_urls || 0;
+      const already = rmu.already_crawled || 0;
+      const success = rmu.crawled_success || 0;
+      const failed = rmu.crawled_failed || 0;
+      const remaining = rmu.remaining_urls !== undefined ? rmu.remaining_urls : Math.max(0, total - already);
+      const pct = rmu.progress_percent !== undefined ? rmu.progress_percent : (total > 0 ? ((already / total) * 100).toFixed(2) : 0);
+      const sessionProcessed = (pipe && (pipe.source === 'rmu' || pipe.source === 'json')) ? (pipe.total_processed || 0) : 0;
+      const hostCount = rmu.host_count || (rmu.hosts ? rmu.hosts.length : 0);
+
+      // Update Nav Tab Badge
+      const badge = document.getElementById('badgeRmuPct');
+      if (badge) badge.innerText = pct + '%';
+
+      // Update Tab 1 Banner
+      const elTotal = document.getElementById('rmuTotalUrls');
+      if (elTotal) elTotal.innerText = total.toLocaleString();
+      const elAlready = document.getElementById('rmuAlreadyCrawled');
+      if (elAlready) elAlready.innerText = already.toLocaleString() + ' (' + pct + '%)';
+      const elSession = document.getElementById('rmuSessionProcessed');
+      if (elSession) elSession.innerText = sessionProcessed.toLocaleString();
+      const elRemaining = document.getElementById('rmuRemainingUrls');
+      if (elRemaining) elRemaining.innerText = remaining.toLocaleString();
+      const elOverall = document.getElementById('rmuOverallPercent');
+      if (elOverall) elOverall.innerText = pct + '%';
+
+      // Update Tab RMU
+      const tTotal = document.getElementById('rmuTabTotal');
+      if (tTotal) tTotal.innerText = total.toLocaleString();
+      const tHostCount = document.getElementById('rmuTabHostCount');
+      if (tHostCount) tHostCount.innerText = hostCount + ' hosts';
+      const tCrawled = document.getElementById('rmuTabCrawled');
+      if (tCrawled) tCrawled.innerText = already.toLocaleString();
+      const tCrawledPct = document.getElementById('rmuTabCrawledPct');
+      if (tCrawledPct) tCrawledPct.innerText = pct + '% hoàn thành';
+      const tSuccess = document.getElementById('rmuTabSuccess');
+      if (tSuccess) tSuccess.innerText = success.toLocaleString();
+      const tChars = document.getElementById('rmuTabSuccessChars');
+      if (tChars) tChars.innerText = ((rmu.total_chars || 0) / (1024*1024)).toFixed(2) + ' MB text sạch';
+      const tFailed = document.getElementById('rmuTabFailed');
+      if (tFailed) tFailed.innerText = failed.toLocaleString();
+      const tRemaining = document.getElementById('rmuTabRemaining');
+      if (tRemaining) tRemaining.innerText = remaining.toLocaleString();
+      const tProgText = document.getElementById('rmuTabProgressText');
+      if (tProgText) tProgText.innerText = already.toLocaleString() + ' / ' + total.toLocaleString() + ' URLs (' + pct + '%)';
+      const tProgBar = document.getElementById('rmuTabProgressBar');
+      if (tProgBar) tProgBar.style.width = pct + '%';
+    }
+
+    function renderRmuHostsTables(hosts) {
+      // Banner Collapsible Table
+      const bannerTbody = document.getElementById('rmuHostsTableBody');
+      if (bannerTbody) {
+        bannerTbody.innerHTML = hosts.map(h => `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-1.5 px-3 font-semibold text-white">${h.domain}</td>
+            <td class="py-1.5 px-3 text-right text-slate-400">${h.url_count.toLocaleString()}</td>
+            <td class="py-1.5 px-3 text-right text-emerald-400 font-bold">${h.crawled_count.toLocaleString()}</td>
+            <td class="py-1.5 px-3 text-right text-indigo-300">${h.success_count.toLocaleString()}</td>
+            <td class="py-1.5 px-3 text-right text-rose-400">${h.failed_count.toLocaleString()}</td>
+            <td class="py-1.5 px-3 text-right text-amber-400">${Math.max(0, h.url_count - h.crawled_count).toLocaleString()}</td>
+            <td class="py-1.5 px-3 text-right text-cyan-400 font-bold">${h.progress_percent}%</td>
+            <td class="py-1.5 px-3 text-center">
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${h.crawled_count >= h.url_count ? 'bg-emerald-500/20 text-emerald-300' : (h.crawled_count > 0 ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-800 text-slate-500')}">
+                ${h.crawled_count >= h.url_count ? 'XONG' : (h.crawled_count > 0 ? 'ĐANG CÀO' : 'CHỜ')}
+              </span>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // Tab RMU Full Table
+      filterRmuTable();
+    }
+
+    function filterRmuTable() {
+      if (!rmuDataCache || !rmuDataCache.hosts) return;
+      const query = (document.getElementById('rmuHostSearchInput') ? document.getElementById('rmuHostSearchInput').value : '').toLowerCase().trim();
+      let filtered = rmuDataCache.hosts;
+      if (query) {
+        filtered = filtered.filter(h => h.domain.toLowerCase().includes(query));
+      }
+      const countEl = document.getElementById('displayedRmuHostsCount');
+      if (countEl) countEl.innerText = filtered.length;
+      const totalCountEl = document.getElementById('totalRmuHostsCount');
+      if (totalCountEl) totalCountEl.innerText = rmuDataCache.hosts.length;
+
+      const tabTbody = document.getElementById('rmuTabTableBody');
+      if (!tabTbody) return;
+
+      tabTbody.innerHTML = filtered.map((h, idx) => `
+        <tr class="hover:bg-slate-800/40 transition">
+          <td class="py-3 px-4 text-slate-500 text-center font-mono">${idx + 1}</td>
+          <td class="py-3 px-4 font-semibold text-white">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-globe text-slate-500 text-xs"></i>
+              <span>${h.domain}</span>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-right text-slate-400">${h.url_count.toLocaleString()}</td>
+          <td class="py-3 px-4 text-right text-emerald-400 font-bold">${h.crawled_count.toLocaleString()}</td>
+          <td class="py-3 px-4 text-right text-indigo-300">${h.success_count.toLocaleString()}</td>
+          <td class="py-3 px-4 text-right text-rose-400">${h.failed_count.toLocaleString()}</td>
+          <td class="py-3 px-4 text-right text-amber-400">${Math.max(0, h.url_count - h.crawled_count).toLocaleString()}</td>
+          <td class="py-3 px-4">
+            <div class="flex items-center gap-2">
+              <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-700">
+                <div class="bg-indigo-500 h-full rounded-full transition-all duration-300" style="width: ${h.progress_percent}%"></div>
+              </div>
+              <span class="text-[11px] font-bold text-slate-300 w-12 text-right">${h.progress_percent}%</span>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-center">
+            <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${h.crawled_count >= h.url_count ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : (h.crawled_count > 0 ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-slate-800 text-slate-500 border border-slate-700')}">
+              ${h.crawled_count >= h.url_count ? 'HOÀN TẤT' : (h.crawled_count > 0 ? 'TIẾN HÀNH' : 'CHỜ CÀO')}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
     // Pipeline Controls
-    async function startCrawlFromUI() {
+    async function startCrawlFromUI(overrideSource = null) {
+      let source = overrideSource || selectedCrawlSource;
+      if (source === 'rmu') source = 'json';
       const groups = [];
-      if (document.getElementById('chkGroup1').checked) groups.push(1);
-      if (document.getElementById('chkGroup2').checked) groups.push(2);
+      if (source === 'corpus') {
+        if (document.getElementById('chkGroup1').checked) groups.push(1);
+        if (document.getElementById('chkGroup2').checked) groups.push(2);
+        if (groups.length === 0) {
+          alert('Vui lòng chọn ít nhất 1 nhóm domain để cào!');
+          return;
+        }
+      }
       const concurrency = parseInt(document.getElementById('inputConcurrency').value);
       const limitVal = document.getElementById('inputLimit').value;
       const limit = limitVal ? parseInt(limitVal) : null;
       const use_staging = document.getElementById('chkUseStaging') ? document.getElementById('chkUseStaging').checked : true;
 
-      if (groups.length === 0) {
-        alert('Vui lòng chọn ít nhất 1 nhóm domain để cào!');
-        return;
-      }
-
       const res = await fetch('/api/crawler/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groups, concurrency, limit, use_staging })
+        body: JSON.stringify({ groups, concurrency, limit, use_staging, source })
       });
       const data = await res.json();
       alert(data.message);
+    }
+
+    function startJsonCrawlModal() {
+      const fileName = document.getElementById('activeJsonFileName') ? document.getElementById('activeJsonFileName').innerText : 'file JSON';
+      if (confirm(`Bắt đầu cào tập dữ liệu từ ${fileName}?`)) {
+        startCrawlFromUI('json');
+      }
+    }
+
+    function startRmuCrawlModal() {
+      startJsonCrawlModal();
     }
 
     async function pauseCrawl() {
@@ -924,6 +1593,7 @@
       initChart();
       setupTelemetry();
       loadDomainsData(); // Tự động nạp danh sách 97 domain ngay khi mở trang
+      checkJsonDatasetStatus(); // Tự động kiểm tra cấu hình & nạp thống kê JSON Dataset
     };
   </script>
 </body>

@@ -9,6 +9,11 @@ from typing import Optional, List, Set, Dict, Any
 from ..pipeline import CrawlerPipeline
 from ..storage import CheckpointTracker, DocumentStore
 from ..domains import get_all_domains_metadata
+from ..config import (
+    get_custom_json_config,
+    setup_custom_json_dataset,
+    reset_custom_json_dataset
+)
 
 logger = logging.getLogger("vibio_crawler.manager")
 
@@ -24,14 +29,21 @@ class CrawlerManager:
         self._use_staging_pref = True
 
     def get_status(self) -> Dict[str, Any]:
-        """Lấy toàn bộ trạng thái hệ thống: pipeline metrics + checkpoint summary."""
+        """Lấy toàn bộ trạng thái hệ thống: pipeline metrics + checkpoint summary + RMU stats."""
         stats = self.checkpoint.get_stats()
+        rmu_stats = self.checkpoint.get_rmu_stats()
         
         if self.current_pipeline is not None:
             pipeline_metrics = self.current_pipeline.get_metrics()
         else:
             pipeline_metrics = {
                 "state": "IDLE",
+                "source": "corpus",
+                "source_total_urls": 3638908,
+                "already_crawled_count": stats["total_visited"],
+                "session_processed": 0,
+                "overall_done_count": stats["total_visited"],
+                "overall_progress_percent": round((stats["total_visited"] / 3638908 * 100), 2) if 3638908 > 0 else 0.0,
                 "elapsed_seconds": 0.0,
                 "speed_doc_per_sec": 0.0,
                 "speed_urls_per_min": 0.0,
@@ -59,7 +71,9 @@ class CrawlerManager:
                 "status_breakdown": stats["status_breakdown"],
                 "group_breakdown": stats.get("group_breakdown", {}),
                 "top_domains_success": stats["top_domains_success"]
-            }
+            },
+            "rmu": rmu_stats,
+            "json_dataset": self.get_json_dataset_status()
         }
 
     async def start(
@@ -69,7 +83,8 @@ class CrawlerManager:
         limit: Optional[int] = None,
         concurrency: int = 50,
         use_staging: Optional[bool] = None,
-        staging_batch_size: Optional[int] = None
+        staging_batch_size: Optional[int] = None,
+        source: str = "corpus"
     ) -> Dict[str, Any]:
         """Khởi động một phiên crawl mới trong background task."""
         async with self._lock:
@@ -78,6 +93,7 @@ class CrawlerManager:
 
             target_groups = groups if groups else [1]
             target_domains_set = set(d.lower().strip() for d in domains) if domains else None
+            source_clean = source.lower().strip() if source else "corpus"
 
             target_staging = self._use_staging_pref if use_staging is None else use_staging
             self._use_staging_pref = target_staging
@@ -88,14 +104,19 @@ class CrawlerManager:
                 target_domains=target_domains_set,
                 limit=limit,
                 use_staging=target_staging,
-                staging_batch_size=staging_batch_size
+                staging_batch_size=staging_batch_size,
+                source=source_clean
             )
 
             # Chạy pipeline trong asyncio task ngầm
             self._background_task = asyncio.create_task(self._run_pipeline_wrapper())
+            if source_clean == "rmu":
+                msg = f"Đã khởi động crawl RMU Dataset (1.46M URLs) với {concurrency} workers."
+            else:
+                msg = f"Đã khởi động crawl Corpus với {concurrency} workers trên Nhóm {target_groups}."
             return {
                 "success": True,
-                "message": f"Đã khởi động crawl với {concurrency} workers trên Nhóm {target_groups}."
+                "message": msg
             }
 
     async def _run_pipeline_wrapper(self):
@@ -246,6 +267,44 @@ class CrawlerManager:
     def get_document_detail(self, doc_id: int) -> Optional[Dict[str, Any]]:
         """Lấy chi tiết bài viết (Markdown + metadata) theo ID."""
         return self.doc_store.get_document(doc_id)
+
+    def get_rmu_data(self) -> Dict[str, Any]:
+        """Lấy thống kê chi tiết tiến độ RMU Dataset (1.46M URLs) theo từng domain và tổng thể."""
+        return self.checkpoint.get_rmu_stats()
+
+    def get_json_dataset_status(self) -> Dict[str, Any]:
+        """Lấy trạng thái thiết lập của dataset JSON tùy chỉnh."""
+        cfg = get_custom_json_config()
+        is_configured = cfg is not None and cfg.get("is_configured", False)
+        stats = self.checkpoint.get_rmu_stats()
+        return {
+            "is_configured": is_configured,
+            "config": cfg,
+            "stats": stats
+        }
+
+    def setup_json_dataset(self, json_path: str) -> Dict[str, Any]:
+        """Tiền xử lý và thiết lập dataset JSON mới (one-time setup)."""
+        try:
+            cfg = setup_custom_json_dataset(json_path)
+            stats = self.checkpoint.get_rmu_stats()
+            return {
+                "success": True,
+                "message": f"Đã thiết lập thành công dataset '{cfg['file_name']}' ({cfg['total_urls']:,} URLs, {cfg['host_count']} hosts).",
+                "config": cfg,
+                "stats": stats
+            }
+        except Exception as e:
+            logger.error(f"Lỗi setup json dataset: {e}")
+            return {
+                "success": False,
+                "message": str(e)
+            }
+
+    def reset_json_dataset(self) -> Dict[str, Any]:
+        """Hủy cấu hình dataset hiện tại để người dùng có thể chọn file khác."""
+        reset_custom_json_dataset()
+        return {"success": True, "message": "Đã reset cấu hình dataset."}
 
 # Singleton Instance
 crawler_manager = CrawlerManager()

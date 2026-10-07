@@ -22,8 +22,9 @@ def show_stats():
     """Hiển thị thống kê tổng quan từ cơ sở dữ liệu checkpoint."""
     tracker = CheckpointTracker()
     stats = tracker.get_stats()
-    print("=" * 60)
-    print("THỐNG KÊ TIẾN ĐỘ CORPUS HIỆN TẠI")
+    rmu = tracker.get_rmu_stats()
+    print("=" * 65)
+    print("THỐNG KÊ TIẾN ĐỘ TOÀN BỘ CORPUS (links_corpus.parquet - 3.64M URLs)")
     print(f"Tổng số URL đã ghé thăm: {stats['total_visited']:,}")
     print(f"Tổng số ký tự text sạch trích xuất: {stats['total_chars']:,}")
     print("\nPhân rã theo trạng thái:")
@@ -32,7 +33,14 @@ def show_stats():
     print("\nTop 10 Domain thành công nhiều nhất:")
     for domain, count in stats['top_domains_success']:
         print(f"  - {domain:<35}: {count:,}")
-    print("=" * 60)
+    print("-" * 65)
+    print("THỐNG KÊ TIẾN ĐỘ TẬP DỮ LIỆU RMU (rmu.json - 1,464,927 URLs)")
+    print(f"Tổng số URLs RMU         : {rmu['total_urls']:,} URLs ({rmu['host_count']} hosts)")
+    print(f"Đã cào trước đó          : {rmu['already_crawled']:,} URLs ({rmu['progress_percent']}%)")
+    print(f"  - Thành công           : {rmu['crawled_success']:,}")
+    print(f"  - Thất bại             : {rmu['crawled_failed']:,}")
+    print(f"Còn lại cần cào          : {rmu['remaining_urls']:,} URLs")
+    print("=" * 65)
 
 def main():
     parser = argparse.ArgumentParser(description="ViBioMIR Production Crawler CLI")
@@ -41,6 +49,17 @@ def main():
         choices=["dashboard", "run", "sample", "stats"],
         default="dashboard",
         help="Chế độ hoạt động: 'dashboard' (mở Web UI), 'run' (cào toàn bộ CLI), 'sample' (chạy mẫu), 'stats' (xem tiến độ)"
+    )
+    parser.add_argument(
+        "--source",
+        choices=["corpus", "rmu"],
+        default="corpus",
+        help="Nguồn dữ liệu URL cần cào: 'corpus' (toàn bộ 3.64M URLs) hoặc 'rmu' (chỉ 1.46M URLs trong rmu.json)"
+    )
+    parser.add_argument(
+        "--rmu",
+        action="store_true",
+        help="Cào nhanh riêng tập dữ liệu RMU (tương đương --source rmu)"
     )
     parser.add_argument(
         "--port",
@@ -94,6 +113,7 @@ def main():
         show_stats()
         return
 
+    source = "rmu" if args.rmu else args.source
     limit = args.limit
     if args.mode == "sample" and not limit:
         limit = 500
@@ -103,7 +123,8 @@ def main():
         include_group_2=args.include_group_2,
         limit=limit,
         use_staging=False if args.no_staging else None,
-        staging_batch_size=args.staging_batch
+        staging_batch_size=args.staging_batch,
+        source=source
     )
 
     try:

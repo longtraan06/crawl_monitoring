@@ -42,12 +42,16 @@ class StartCrawlRequest(BaseModel):
     concurrency: int = 50
     use_staging: Optional[bool] = None
     staging_batch_size: Optional[int] = None
+    source: Optional[str] = "corpus"
 
 class RetryRequest(BaseModel):
     ids: List[int]
 
 class ToggleStagingRequest(BaseModel):
     enabled: bool
+
+class SetupJsonRequest(BaseModel):
+    json_path: str
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
@@ -69,7 +73,8 @@ async def start_crawl(req: StartCrawlRequest):
         limit=req.limit,
         concurrency=req.concurrency,
         use_staging=req.use_staging,
-        staging_batch_size=req.staging_batch_size
+        staging_batch_size=req.staging_batch_size,
+        source=req.source or "corpus"
     )
     return JSONResponse(res)
 
@@ -101,6 +106,28 @@ async def toggle_staging(req: ToggleStagingRequest):
 async def get_crawler_status():
     """Lấy trạng thái tổng quan của crawler và checkpoint database."""
     return JSONResponse(crawler_manager.get_status())
+
+@app.get("/api/crawler/rmu/stats")
+async def get_rmu_stats():
+    """Lấy thống kê tiến độ riêng biệt cho tập dữ liệu JSON / RMU (backward compatibility)."""
+    return JSONResponse(crawler_manager.get_rmu_data())
+
+@app.get("/api/dataset/json/status")
+async def get_json_dataset_status():
+    """Lấy trạng thái thiết lập và thống kê của dataset JSON tùy chỉnh."""
+    return JSONResponse(crawler_manager.get_json_dataset_status())
+
+@app.post("/api/dataset/json/setup")
+async def setup_json_dataset(req: SetupJsonRequest):
+    """Tiền xử lý và kích hoạt dataset JSON mới từ đường dẫn được chỉ định (One-time setup)."""
+    res = crawler_manager.setup_json_dataset(req.json_path)
+    return JSONResponse(res)
+
+@app.post("/api/dataset/json/reset")
+async def reset_json_dataset():
+    """Hủy cấu hình dataset hiện tại để người dùng có thể đổi sang file JSON khác."""
+    res = crawler_manager.reset_json_dataset()
+    return JSONResponse(res)
 
 # --- DOMAINS METADATA & PROGRESS ---
 

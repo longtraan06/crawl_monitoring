@@ -22,9 +22,15 @@ logger = logging.getLogger("vibio_crawler.fetcher")
 class AsyncFetcher:
     """Fetcher bất đồng bộ tối ưu hóa cho crawl bài viết y tế quy mô lớn."""
 
-    def __init__(self, timeout: float = REQUEST_TIMEOUT, max_retries: int = MAX_RETRIES):
+    def __init__(
+        self,
+        timeout: float = REQUEST_TIMEOUT,
+        max_retries: int = MAX_RETRIES,
+        max_clients: int = 150
+    ):
         self.timeout = timeout
         self.max_retries = max_retries
+        self.max_clients = max_clients
         self.session: Optional[AsyncSession] = None
         self._laodong_cookies: Optional[str] = None
 
@@ -42,7 +48,8 @@ class AsyncFetcher:
                 impersonate=IMPERSONATE_BROWSER,
                 timeout=self.timeout,
                 headers=DEFAULT_HEADERS,
-                verify=False  # Cho phép các cổng y tế cũ chứng chỉ SSL hết hạn
+                verify=False,  # Cho phép các cổng y tế cũ chứng chỉ SSL hết hạn
+                max_clients=self.max_clients
             )
 
     async def close(self):
