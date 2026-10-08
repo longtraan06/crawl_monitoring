@@ -28,6 +28,7 @@ from .config import (
     USE_STAGING_BUFFER,
     STAGING_BATCH_SIZE,
     RMU_TOTAL_URLS,
+    REQUEST_TIMEOUT,
     ensure_rmu_parquet,
     get_active_dataset_parquet,
     get_active_total_urls
@@ -56,15 +57,31 @@ class CrawlerPipeline:
         use_staging: Optional[bool] = None,
         staging_batch_size: Optional[int] = None,
         include_group_2: bool = False,
-        source: str = "corpus"
+        source: str = "corpus",
+        timeout: Optional[float] = None
     ):
         self.concurrency = concurrency
         self.source = source.lower() if source else "corpus"
+        self.timeout = float(timeout) if timeout is not None and float(timeout) > 0 else REQUEST_TIMEOUT
         if include_group_2 and not target_groups:
             self.target_groups = [1, 2]
         else:
             self.target_groups = target_groups or [1]
-        self.target_domains = target_domains
+
+        # Chuẩn hóa target_domains hỗ trợ cả định dạng có hoặc không có 'www.'
+        if target_domains:
+            expanded = set()
+            for d in target_domains:
+                d_c = d.lower().strip()
+                expanded.add(d_c)
+                if d_c.startswith("www."):
+                    expanded.add(d_c[4:])
+                else:
+                    expanded.add(f"www.{d_c}")
+            self.target_domains = expanded
+        else:
+            self.target_domains = None
+
         self.limit = limit
         
         self.use_staging = USE_STAGING_BUFFER if use_staging is None else use_staging
@@ -77,7 +94,7 @@ class CrawlerPipeline:
         
         self.checkpoint = CheckpointTracker()
         self.doc_store = DocumentStore(use_staging=self.use_staging)
-        self.fetcher = AsyncFetcher(max_clients=max(self.concurrency * 2, 120))
+        self.fetcher = AsyncFetcher(timeout=self.timeout, max_clients=max(self.concurrency * 2, 120))
         self.extractor = HybridCleaner()
         
         # ThreadPool đa nhân CPU cho HTML parsing
@@ -155,6 +172,7 @@ class CrawlerPipeline:
             "queue_size": self.task_queue.qsize(),
             "target_groups": self.target_groups,
             "concurrency": self.concurrency,
+            "timeout": self.timeout,
             "limit": self.limit,
             "eta_seconds": round(eta_seconds, 1) if eta_seconds is not None else None,
             "use_staging": self.use_staging,

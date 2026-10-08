@@ -82,6 +82,7 @@ class CrawlerManager:
         domains: Optional[List[str]] = None,
         limit: Optional[int] = None,
         concurrency: int = 50,
+        timeout: Optional[float] = None,
         use_staging: Optional[bool] = None,
         staging_batch_size: Optional[int] = None,
         source: str = "corpus"
@@ -105,19 +106,55 @@ class CrawlerManager:
                 limit=limit,
                 use_staging=target_staging,
                 staging_batch_size=staging_batch_size,
-                source=source_clean
+                source=source_clean,
+                timeout=timeout
             )
 
             # Chạy pipeline trong asyncio task ngầm
             self._background_task = asyncio.create_task(self._run_pipeline_wrapper())
-            if source_clean == "rmu":
-                msg = f"Đã khởi động crawl RMU Dataset (1.46M URLs) với {concurrency} workers."
+            timeout_str = f"{self.current_pipeline.timeout}s"
+            if source_clean in ("rmu", "json"):
+                if target_domains_set:
+                    msg = f"Đã khởi động crawl {len(target_domains_set)} domain được chọn từ File JSON ({concurrency} workers, Timeout: {timeout_str})."
+                else:
+                    msg = f"Đã khởi động crawl toàn bộ File JSON ({concurrency} workers, Timeout: {timeout_str})."
             else:
-                msg = f"Đã khởi động crawl Corpus với {concurrency} workers trên Nhóm {target_groups}."
+                msg = f"Đã khởi động crawl Corpus ({concurrency} workers trên Nhóm {target_groups}, Timeout: {timeout_str})."
             return {
                 "success": True,
                 "message": msg
             }
+
+    async def recrawl_failed(
+        self,
+        domains: List[str],
+        concurrency: int = 50,
+        timeout: Optional[float] = None,
+        source: str = "json"
+    ) -> Dict[str, Any]:
+        """Xóa URL lỗi của các domain chỉ định và khởi động cào lại ngay lập tức."""
+        if not domains:
+            return {"success": False, "message": "Vui lòng chọn ít nhất 1 domain để cào lại URL lỗi."}
+
+        deleted_count = self.checkpoint.retry_all_failed(domains=domains)
+        logger.info(f"Đã giải phóng {deleted_count} URL lỗi cho {len(domains)} domain để cào lại.")
+
+        start_res = await self.start(
+            domains=domains,
+            concurrency=concurrency,
+            timeout=timeout,
+            source=source
+        )
+
+        if not start_res.get("success"):
+            return start_res
+
+        return {
+            "success": True,
+            "retried_count": deleted_count,
+            "domains": domains,
+            "message": f"Đã giải phóng {deleted_count} URL lỗi và bắt đầu cào lại {len(domains)} domain (Timeout: {timeout or 12}s)."
+        }
 
     async def _run_pipeline_wrapper(self):
         """Wrapper thực thi pipeline ngầm và giải phóng tài nguyên khi hoàn tất."""

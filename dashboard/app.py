@@ -40,9 +40,16 @@ class StartCrawlRequest(BaseModel):
     domains: Optional[List[str]] = None
     limit: Optional[int] = None
     concurrency: int = 50
+    timeout: Optional[float] = None
     use_staging: Optional[bool] = None
     staging_batch_size: Optional[int] = None
     source: Optional[str] = "corpus"
+
+class RecrawlFailedRequest(BaseModel):
+    domains: List[str]
+    concurrency: Optional[int] = 50
+    timeout: Optional[float] = None
+    source: Optional[str] = "json"
 
 class RetryRequest(BaseModel):
     ids: List[int]
@@ -72,9 +79,21 @@ async def start_crawl(req: StartCrawlRequest):
         domains=req.domains,
         limit=req.limit,
         concurrency=req.concurrency,
+        timeout=req.timeout,
         use_staging=req.use_staging,
         staging_batch_size=req.staging_batch_size,
         source=req.source or "corpus"
+    )
+    return JSONResponse(res)
+
+@app.post("/api/crawler/recrawl-failed")
+async def recrawl_failed_urls(req: RecrawlFailedRequest):
+    """Xóa các URL lỗi của các domain được chọn và khởi động cào lại ngay lập tức."""
+    res = await crawler_manager.recrawl_failed(
+        domains=req.domains,
+        concurrency=req.concurrency or 50,
+        timeout=req.timeout,
+        source=req.source or "json"
     )
     return JSONResponse(res)
 

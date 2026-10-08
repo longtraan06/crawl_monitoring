@@ -97,6 +97,18 @@ def main():
         help="Số lượng URL mỗi đợt chuyển từ tmp sang thư mục project (mặc định: 10)"
     )
     parser.add_argument(
+        "--timeout",
+        type=float,
+        default=None,
+        help="Thời gian timeout tối đa cho mỗi request tải trang tính bằng giây (ví dụ: 10, 15, 30)"
+    )
+    parser.add_argument(
+        "--domains",
+        nargs="+",
+        default=None,
+        help="Danh sách các domain cụ thể muốn cào (cách nhau bởi dấu cách, ví dụ: medlatec.vn suckhoedoisong.vn)"
+    )
+    parser.add_argument(
         "--no-staging",
         action="store_true",
         help="Tắt bộ đệm staging /tmp, ghi trực tiếp vào thư mục project"
@@ -121,10 +133,12 @@ def main():
     pipeline = CrawlerPipeline(
         concurrency=args.concurrency,
         include_group_2=args.include_group_2,
+        target_domains=set(args.domains) if args.domains else None,
         limit=limit,
         use_staging=False if args.no_staging else None,
         staging_batch_size=args.staging_batch,
-        source=source
+        source=source,
+        timeout=args.timeout
     )
 
     try:

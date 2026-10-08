@@ -10,6 +10,7 @@ import logging
 from pathlib import Path
 from typing import Set, List, Dict, Any, Optional, Tuple
 
+from ..domains import get_domain_group
 from ..models import CrawlResult
 from ..config import (
     CHECKPOINT_DB_PATH,
@@ -292,6 +293,7 @@ class CheckpointTracker:
 
             hosts_result.append({
                 "domain": h["url_host"],
+                "group_id": get_domain_group(h["url_host"]),
                 "url_count": url_count,
                 "crawled_count": crawled,
                 "success_count": success,
@@ -387,14 +389,42 @@ class CheckpointTracker:
 
         return deleted
 
-    def retry_all_failed(self, domain: Optional[str] = None) -> int:
-        """Xóa toàn bộ các URL bị lỗi khỏi checkpoint để cào lại hàng loạt."""
+    def retry_all_failed(
+        self,
+        domain: Optional[str] = None,
+        domains: Optional[List[str]] = None
+    ) -> int:
+        """Xóa toàn bộ các URL bị lỗi khỏi checkpoint theo 1 domain hoặc danh sách domains để cào lại."""
+        target_domains = set()
+        if domain:
+            d_clean = domain.lower().strip()
+            target_domains.add(d_clean)
+            if d_clean.startswith("www."):
+                target_domains.add(d_clean[4:])
+            else:
+                target_domains.add(f"www.{d_clean}")
+        if domains:
+            for d in domains:
+                d_clean = d.lower().strip()
+                target_domains.add(d_clean)
+                if d_clean.startswith("www."):
+                    target_domains.add(d_clean[4:])
+                else:
+                    target_domains.add(f"www.{d_clean}")
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            if domain:
-                cursor.execute("SELECT id FROM crawl_checkpoint WHERE status != 'SUCCESS' AND domain = ?;", [domain])
+            if target_domains:
+                placeholders = ",".join("?" for _ in target_domains)
+                cursor.execute(
+                    f"SELECT id FROM crawl_checkpoint WHERE status != 'SUCCESS' AND domain IN ({placeholders});",
+                    list(target_domains)
+                )
                 ids_to_remove = [r[0] for r in cursor.fetchall()]
-                cursor.execute("DELETE FROM crawl_checkpoint WHERE status != 'SUCCESS' AND domain = ?;", [domain])
+                cursor.execute(
+                    f"DELETE FROM crawl_checkpoint WHERE status != 'SUCCESS' AND domain IN ({placeholders});",
+                    list(target_domains)
+                )
             else:
                 cursor.execute("SELECT id FROM crawl_checkpoint WHERE status != 'SUCCESS';")
                 ids_to_remove = [r[0] for r in cursor.fetchall()]
